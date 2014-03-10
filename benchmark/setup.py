@@ -20,7 +20,7 @@ def new_setup(config_path):
     #            distribute StreamOperands
     #
     config = configparser.ConfigParser()
-    config.read('benchmark.ini')
+    config.read(config_path)
     initial_streams = []
     num_topologies = round(eval(config['TOPOLOGIES']['Topologies']))
     if num_topologies < 1:
@@ -36,7 +36,7 @@ def put_topology(config):
         return []
     initial_streams = put_initial_so(config)
     prev_streams = []
-    --num_sos
+    num_sos -= 1
     for i in range(num_sos):
         new_initial_streams, new_prev_streams = new_so(config, prev_streams)
         initial_streams += new_initial_streams
@@ -78,35 +78,44 @@ def get_stream(config):
     num_channels = round(eval(config['TOPOLOGIES']['Channels']))
     if num_channels < 1:
         return None
+    json_file = open('./jsons/initial_stream.json')
+    json_stream = json.load(json_file)
+    json_file.close()
+    json_file = open('./jsons/initial_channel.json')
+    json_channel = json.load(json_file)
+    json_file.close()
 
+    for i in range(num_channels):
+        json_stream['channels'][str(i)] = json_channel
+
+    return json_stream
+
+
+def put_so(config, prev_streams):
     return
 
 
-def new_so(config, prev_streams):
+def get_groups(config, prev_streams):
     return
 
 
-def new_groups(config, prev_streams):
+def get_group(config, streams):
     return
 
 
-def new_group(config, streams):
+def get_cstreams(config, groups):
     return
 
 
-def new_cstreams(config, groups):
+def get_cstream(config, group_subset, stream_subset):
     return
 
 
-def new_cstream(config, group_subset, stream_subset):
+def get_channels(config, group_subset, stream_subset):
     return
 
 
-def new_channels(config, group_subset, stream_subset):
-    return
-
-
-def new_channel(config, group_subsubset, stream_subsubset):
+def get_channel(config, group_subsubset, stream_subsubset):
     return
 
 
