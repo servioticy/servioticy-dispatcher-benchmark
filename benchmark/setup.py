@@ -2,7 +2,6 @@ __author__ = 'alvaro'
 
 import configparser
 import json
-import urllib
 
 import httplib2
 
@@ -38,10 +37,10 @@ def put_topology(config):
     prev_streams = []
     num_sos -= 1
     for i in range(num_sos):
-        new_initial_streams, new_prev_streams = new_so(config, prev_streams)
+        new_initial_streams, new_prev_streams = put_so(config, prev_streams)
         initial_streams += new_initial_streams
         prev_streams = new_prev_streams
-    return
+    return initial_streams
 
 
 def put_initial_so(config):
@@ -66,10 +65,10 @@ def put_initial_so(config):
     if int(response['status']) >= 300:
         print(content + '\n')
         return []
-    json_content = json.load(content)
-    id = json_content['id']
-    for i in streams:
-        initial_streams += [id, streams[i]]
+    json_content = json.loads(content)
+    so_id = json_content['id']
+    for stream in streams:
+        initial_streams += [so_id, stream]
 
     return initial_streams
 
@@ -128,6 +127,14 @@ def request(partial_url, method, body, config):
     response, content = h.request(
         config['API']['BaseAddress'] + partial_url,
         method,
-        urllib.urlencode(body),
+        body,
         headers)
-    return response, content
+    return response, content.decode('utf-8')
+
+
+def main():
+    new_setup('../benchmark.ini')
+
+
+if __name__ == "__main__":
+    main()
