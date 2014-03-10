@@ -68,7 +68,7 @@ def put_initial_so(config):
     json_content = json.loads(content)
     so_id = json_content['id']
     for stream in streams:
-        initial_streams += [so_id, stream]
+        initial_streams += [[so_id, stream]]
 
     return initial_streams
 
