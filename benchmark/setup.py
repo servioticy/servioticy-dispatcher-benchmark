@@ -89,7 +89,6 @@ def get_stream(config):
 
     return json_stream
 
-
 def put_so(config, prev_streams):
     initial_stream_ids = []
     stream_ids = []
@@ -102,6 +101,11 @@ def put_so(config, prev_streams):
     json_file = open('./jsons/so.json')
     json_so = json.load(json_file)
     json_file.close()
+
+    # Get aliases
+
+    json_so["aliases"] = get_aliases(config)
+
     # Get streams
     for i in range(num_streams):
         json_stream = get_stream(config)
@@ -131,6 +135,16 @@ def put_so(config, prev_streams):
         initial_streams += [[so_id, initial_stream_id]]
 
     return initial_streams, streams
+
+
+def get_aliases(config):
+    json_file = open('./jsons/aliases.json')
+    json_aliases = json.load(json_file)
+    json_file.close()
+    json_aliases["@cv-ms@"] = round(eval(config['TOPOLOGIES']['CurrentValueMS']))
+    json_aliases["@pre-filter@"] = round(eval(config['TOPOLOGIES']['PreFilterMS']))
+    json_aliases["@post-filter@"] = round(eval(config['TOPOLOGIES']['PostFilterMS']))
+    return json_aliases
 
 
 def get_groups(config, prev_streams):

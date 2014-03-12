@@ -1,0 +1,23 @@
+[
+    {
+      "@init-js@": ");var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>"
+    },
+    {
+      "@presleep-cv@": "0@init-js@"
+    },
+    {
+      "@postsleep-cv@": "){break;}}result = Number("
+    }
+    {
+      "@presleep-pre@": "true@init-js@"
+    },
+    {
+      "@postsleep-pre@": "){break;}}result = Boolean("
+    },
+    {
+      "@presleep-post@": "true@init-js@"
+    },
+    {
+      "@postsleep-post@": "){break;}}result = Boolean("
+    }
+]
