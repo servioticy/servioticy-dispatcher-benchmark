@@ -141,9 +141,6 @@ def get_aliases(config):
     json_file = open('./jsons/aliases.json')
     json_aliases = json.load(json_file)
     json_file.close()
-    json_aliases["@cv-ms@"] = round(eval(config['TOPOLOGIES']['CurrentValueMS']))
-    json_aliases["@pre-filter@"] = round(eval(config['TOPOLOGIES']['PreFilterMS']))
-    json_aliases["@post-filter@"] = round(eval(config['TOPOLOGIES']['PostFilterMS']))
     return json_aliases
 
 
@@ -193,8 +190,18 @@ def get_channels(config, group_subset, stream_subset):
     return
 
 
-def get_channel(config, group_subsubset, stream_subsubset):
-    return
+def get_channel(config, operands):
+    ms = round(eval(config['TOPOLOGIES']['CurrentValueMS']))
+    json_file = open('./jsons/channel.json')
+    json_channel = json.load(json_file)
+    json_file.close()
+
+    json_channel["type"] = "number"
+    json_channel["current-value"] = "@presleep-cv@" + ms + "@postsleep-cv@" + "0"
+    for operand in operands:
+        json_channel["current-value"] += "+{$" + operand + ".channels.channel0.current-value}"
+
+    return json_channel
 
 
 def request(partial_url, method, body, config):
