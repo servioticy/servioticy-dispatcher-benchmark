@@ -183,7 +183,39 @@ def get_cstreams(config, groups):
 
 
 def get_cstream(config, group_subset, stream_subset):
-    return
+    json_channels = get_channels(config, group_subset, stream_subset)
+    if json_channels is None:
+        return None
+        return None
+    pre_ms = round(eval(config['TOPOLOGIES']['PreFilterMS']))
+    post_ms = round(eval(config['TOPOLOGIES']['PostFilterMS']))
+    pre_prob = round(eval(config['TOPOLOGIES']['PreFilterProb']))
+    post_prob = round(eval(config['TOPOLOGIES']['PreFilterProb']))
+
+    if pre_ms < 0:
+        pre_ms = 0
+    if post_ms < 0:
+        post_ms = 0
+
+    json_file = open('./jsons/channel.json')
+    json_cstream = json.load(json_file)
+    json_file.close()
+
+    if pre_prob < 1:
+        json_cstream["pre-filter"] = "true"
+    else:
+        json_cstream[
+            "pre-filter"] = "@presleep-pre@" + pre_ms + "@postsleep-pre@" + "{$.lastUpdate} %" + pre_prob + "!=" + pre_prob + " - 1"
+
+    if post_prob < 1:
+        json_cstream["post-filter"] = "true"
+    else:
+        json_cstream[
+            "post-filter"] = "@presleep-post@" + pre_ms + "@postsleep-post@" + "{$.lastUpdate} %" + post_prob + "!=" + post_prob + " - 1"
+
+    json_cstream["channels"] = json_channels
+
+    return json_cstream
 
 
 def get_channels(config, group_subset, stream_subset):
@@ -192,6 +224,8 @@ def get_channels(config, group_subset, stream_subset):
 
 def get_channel(config, operands):
     ms = round(eval(config['TOPOLOGIES']['CurrentValueMS']))
+    if ms < 0:
+        ms = 0
     json_file = open('./jsons/channel.json')
     json_channel = json.load(json_file)
     json_file.close()
