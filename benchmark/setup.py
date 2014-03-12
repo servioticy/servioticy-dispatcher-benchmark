@@ -186,7 +186,7 @@ def get_cstream(config, group_subset, stream_subset):
     json_channels = get_channels(config, group_subset, stream_subset)
     if json_channels is None:
         return None
-        return None
+
     pre_ms = round(eval(config['TOPOLOGIES']['PreFilterMS']))
     post_ms = round(eval(config['TOPOLOGIES']['PostFilterMS']))
     pre_prob = round(eval(config['TOPOLOGIES']['PreFilterProb']))
