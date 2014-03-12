@@ -201,14 +201,14 @@ def get_cstream(config, group_subset, stream_subset):
     json_cstream = json.load(json_file)
     json_file.close()
 
-    json_cstream["pre-filter"] = "@presleep-pre@" + pre_ms + "@postsleep-pre@"
+    json_cstream["pre-filter"] = "@presleep-filter@" + pre_ms + "@postsleep-filter@"
     if pre_prob < 1:
         json_cstream["pre-filter"] += "false"
     else:
         json_cstream[
             "pre-filter"] += "{$.lastUpdate} %" + pre_prob + "==" + pre_prob + " - 1"
 
-    json_cstream["post-filter"] = "@presleep-post@" + pre_ms + "@postsleep-post@"
+    json_cstream["post-filter"] = "@presleep-filter@" + pre_ms + "@postsleep-filter@"
     if post_prob < 1:
         json_cstream["post-filter"] += "false"
     else:
