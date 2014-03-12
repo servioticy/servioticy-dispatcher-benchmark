@@ -1,6 +1,6 @@
 {
-    "pre-filter": "{$.lastUpdate} % @pre-prob@ != @pre-prob@ - 1",
+    "pre-filter": "",
     "channels": {
     },
-    "post-filter": {"{$.lastUpdate}+1} % @post-prob@ != @post-prob@ - 1"
+    "post-filter": ""
 }

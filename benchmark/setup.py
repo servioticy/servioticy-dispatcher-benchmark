@@ -212,7 +212,7 @@ def get_cstream(config, group_subset, stream_subset):
     if post_prob < 1:
         json_cstream["post-filter"] += "false"
     else:
-        json_cstream["post-filter"] += "{$.lastUpdate} %" + post_prob + "==" + post_prob + " - 1"
+        json_cstream["post-filter"] += "{$.lastUpdate}+1 %" + post_prob + "==" + post_prob + " - 1"
 
     json_cstream["channels"] = json_channels
 
@@ -231,7 +231,6 @@ def get_channel(config, operands):
     json_channel = json.load(json_file)
     json_file.close()
 
-    json_channel["type"] = "number"
     json_channel["current-value"] = "@presleep-cv@" + ms + "@postsleep-cv@" + "0"
     for operand in operands:
         json_channel["current-value"] += "+{$" + operand + ".channels.channel0.current-value}"
