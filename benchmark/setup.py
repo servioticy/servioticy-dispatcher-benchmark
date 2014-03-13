@@ -56,8 +56,7 @@ def put_initial_so(config):
 
     for i in range(num_initial_streams):
         json_stream = get_stream(config)
-        if json_stream is None:
-            continue
+
         json_so["streams"]["stream" + str(i)] = json_stream
         streams += ["stream" + str(i)]
 
@@ -76,7 +75,7 @@ def put_initial_so(config):
 def get_stream(config):
     num_channels = round(eval(config['TOPOLOGIES']['Channels']))
     if num_channels < 1:
-        return None
+        return {}
     json_file = open('./jsons/initial_stream.json')
     json_stream = json.load(json_file)
     json_file.close()
@@ -109,8 +108,7 @@ def put_so(config, prev_streams):
     # Get streams
     for i in range(num_streams):
         json_stream = get_stream(config)
-        if json_stream is None:
-            continue
+
         json_so["streams"]["stream" + str(i)] = json_stream
         initial_stream_ids += ["stream" + str(i)]
         stream_ids += ["stream" + str(i)]
@@ -119,7 +117,7 @@ def put_so(config, prev_streams):
     json_so["groups"] = get_groups(config, prev_streams)
 
     # Get cstreams
-    json_so["cstreams"] = get_cstreams(config, json_so["groups"])
+    json_so["cstreams"] = get_cstreams(config, stream_ids, json_so["groups"])
 
     response, content = request('', 'POST', json.dumps(json_so), config)
 
@@ -149,7 +147,7 @@ def get_groups(config, prev_streams):
     member_distribution = config['TOPOLOGIES']['MemberDistribution']
     groups = {}
     if num_groups < 1:
-        return None
+        return groups
     if member_distribution == 'deterministic':
         return get_groups_det(config, prev_streams)
 
@@ -178,14 +176,48 @@ def get_groups_det(config, prev_streams):
     return groups
 
 
-def get_cstreams(config, groups):
-    return
+def get_cstreams(config, init_streams, groups):
+    num_cstreams = round(eval(config['TOPOLOGIES']['CompositeStreams']))
+    cstreams = {}
+    if num_cstreams < 1:
+        return {}
+    stream_ids = []
+    group_ids = []
+
+    for i in range(num_cstreams):
+        stream_ids += ['cstream' + i]
+
+    stream_ids += init_streams
+
+    for key in groups.keys():
+        group_ids += [key]
+
+    group_distribution = config['TOPOLOGIES']['GroupDistribution']
+    stream_distribution = config['TOPOLOGIES']['StreamRefsDistribution']
+
+    for i in range(num_cstreams):
+        group_set = []
+        stream_set = []
+        ratio = round(len(group_ids) / num_cstreams)
+        if ratio < 1:
+            ratio = 1
+        if group_distribution == 'deterministic':
+            group_set = group_ids[i * ratio:] + group_ids[:i * ratio]
+        else:
+            group_set = group_ids
+
+        if stream_distribution == 'deterministic':
+            stream_set = stream_ids[i * ratio:] + stream_ids[:i * ratio]
+        else:
+            stream_set = stream_ids
+
+        cstreams['cstream' + i] = get_cstream(config, group_set, stream_set)
+
+    return num_cstreams
 
 
 def get_cstream(config, group_subset, stream_subset):
     json_channels = get_channels(config, group_subset, stream_subset)
-    if json_channels is None:
-        return None
 
     pre_ms = round(eval(config['TOPOLOGIES']['PreFilterMS']))
     post_ms = round(eval(config['TOPOLOGIES']['PostFilterMS']))
@@ -220,17 +252,48 @@ def get_cstream(config, group_subset, stream_subset):
 
 
 def get_channels(config, group_subset, stream_subset):
+    channels = {}
+    num_channels = round(eval(config['TOPOLOGIES']['Channels']))
     group_distribution = config['TOPOLOGIES']['GroupDistribution']
+    group_operands = config['TOPOLOGIES']['GroupOperands']
     stream_distribution = config['TOPOLOGIES']['StreamRefsDistribution']
+    stream_operands = config['TOPOLOGIES']['StreamOperands']
 
-    return
+    group_sets = distribute_operands(group_subset, num_channels, group_operands, group_distribution)
+    stream_sets = distribute_operands(stream_subset, num_channels, stream_operands, stream_distribution)
+
+    for i in range(num_channels):
+        channels['channel' + i] = get_channel(config, group_sets[i] + stream_sets[i])
+
+    return channels
 
 
-def group_operands_det(config, operands, len):
-    grouped_operands = []
+def distribute_operands_det(operands, num_sets, num_members):
+    operand_sets = []
+    j = 0
+    for i in range(num_sets):
+        nm = round(eval(num_members))
+        operand_sets[i] += (operands + operands)[j % len(operands):(j + nm) % len(operands) * 2]
+        j += nm
+    return operand_sets
 
-    for i in range(len):
-        grouped_operands[i % len] += [operands[i]]
+
+def distribute_operands(operands, num_sets, num_members, distribution):
+    if distribution == 'deterministic':
+        return distribute_operands_det(operands, num_sets, num_members)
+    operand_sets = []
+    for i in range(num_sets):
+        not_found = True
+        operand_sets[i] = []
+        nm = round(eval(num_members))
+        for j in range(nm):
+            while not_found:
+                sel_operand = round(eval(distribution))
+                if sel_operand < 0 or sel_operand >= len(operands):
+                    continue
+                operand_sets[i] += [operands[sel_operand]]
+                not_found = False
+    return operand_sets
 
 
 def get_channel(config, operands):
