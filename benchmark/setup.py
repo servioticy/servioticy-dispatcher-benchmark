@@ -220,7 +220,17 @@ def get_cstream(config, group_subset, stream_subset):
 
 
 def get_channels(config, group_subset, stream_subset):
+    group_distribution = config['TOPOLOGIES']['GroupDistribution']
+    stream_distribution = config['TOPOLOGIES']['StreamRefsDistribution']
+
     return
+
+
+def group_operands_det(config, operands, len):
+    grouped_operands = []
+
+    for i in range(len):
+        grouped_operands[i % len] += [operands[i]]
 
 
 def get_channel(config, operands):
