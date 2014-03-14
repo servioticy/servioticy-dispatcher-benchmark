@@ -23,7 +23,7 @@ def new_setup(config_path):
     initial_streams = []
     num_topologies = round(eval(config['TOPOLOGIES']['Topologies']))
     if num_topologies < 1:
-        return
+        num_topologies = 1
     for i in range(num_topologies):
         initial_streams += put_topology(config)
     return
@@ -32,9 +32,9 @@ def new_setup(config_path):
 def put_topology(config):
     num_sos = round(eval(config['TOPOLOGIES']['SOs']))
     if num_sos < 1:
-        return []
+        num_sos = 1
     initial_streams = put_initial_so(config)
-    prev_streams = []
+    prev_streams = initial_streams
     num_sos -= 1
     for i in range(num_sos):
         new_initial_streams, new_prev_streams = put_so(config, prev_streams)
@@ -48,7 +48,7 @@ def put_initial_so(config):
     streams = []
     num_initial_streams = round(eval(config['TOPOLOGIES']['InitialStreams']))
     if num_initial_streams < 1:
-        return []
+        num_initial_streams = 1
 
     json_file = open('./jsons/initial_so.json')
     json_so = json.load(json_file)
@@ -57,8 +57,8 @@ def put_initial_so(config):
     for i in range(num_initial_streams):
         json_stream = get_stream(config)
 
-        json_so["streams"]["stream" + str(i)] = json_stream
-        streams += ["stream" + str(i)]
+        json_so['streams']['stream' + str(i)] = json_stream
+        streams += ['stream' + str(i)]
 
     response, content = request('', 'POST', json.dumps(json_so), config)
     if int(response['status']) >= 300:
@@ -75,7 +75,7 @@ def put_initial_so(config):
 def get_stream(config):
     num_channels = round(eval(config['TOPOLOGIES']['Channels']))
     if num_channels < 1:
-        return {}
+        num_channels = 1
     json_file = open('./jsons/initial_stream.json')
     json_stream = json.load(json_file)
     json_file.close()
@@ -84,7 +84,7 @@ def get_stream(config):
     json_file.close()
 
     for i in range(num_channels):
-        json_stream['channels'][str(i)] = json_channel
+        json_stream['channels']['channel' + str(i)] = json_channel
 
     return json_stream
 
@@ -94,8 +94,8 @@ def put_so(config, prev_streams):
     initial_streams = []
     streams = []
     num_streams = round(eval(config['TOPOLOGIES']['Streams']))
-    if num_streams < 0:
-        num_streams = 0
+    if num_streams < 1:
+        num_streams = 1
 
     json_file = open('./jsons/so.json')
     json_so = json.load(json_file)
@@ -103,27 +103,26 @@ def put_so(config, prev_streams):
 
     # Get aliases
 
-    json_so["aliases"] = get_aliases(config)
+    json_so['aliases'] = get_aliases(config)
 
     # Get streams
     for i in range(num_streams):
         json_stream = get_stream(config)
 
-        json_so["streams"]["stream" + str(i)] = json_stream
-        initial_stream_ids += ["stream" + str(i)]
-        stream_ids += ["stream" + str(i)]
+        json_so['streams']['stream' + str(i)] = json_stream
+        initial_stream_ids += ['stream' + str(i)]
+        stream_ids += ['stream' + str(i)]
 
     # Get groups
-    json_so["groups"] = get_groups(config, prev_streams)
+    json_so['groups'] = get_groups(config, prev_streams)
 
     # Get cstreams
-    json_so["cstreams"] = get_cstreams(config, stream_ids, json_so["groups"])
-
+    json_so['streams'] = dict(
+        list(json_so['streams'].items()) + list(get_cstreams(config, stream_ids, json_so['groups']).items()))
     response, content = request('', 'POST', json.dumps(json_so), config)
-
     if int(response['status']) >= 300:
         print(content + '\n')
-        return []
+        return [], []
     json_content = json.loads(content)
     so_id = json_content['id']
     for stream_id in stream_ids:
@@ -147,7 +146,7 @@ def get_groups(config, prev_streams):
     member_distribution = config['TOPOLOGIES']['MemberDistribution']
     groups = {}
     if num_groups < 1:
-        return groups
+        num_groups = 1
     if member_distribution == 'deterministic':
         return get_groups_det(config, prev_streams)
 
@@ -158,8 +157,8 @@ def get_groups(config, prev_streams):
             if sel_stream < 0 or sel_stream >= len(prev_streams):
                 continue
 
-            groups["group" + i]["soIds"] = prev_streams[sel_stream][0]
-            groups["group" + i]["stream"] = prev_streams[sel_stream][1]
+            groups['group' + str(i)]['soIds'] = [prev_streams[sel_stream][0]]
+            groups['group' + str(i)]['stream'] = prev_streams[sel_stream][1]
             not_found = False
     return groups
 
@@ -168,10 +167,11 @@ def get_groups_det(config, prev_streams):
     num_groups = round(eval(config['TOPOLOGIES']['Groups']))
     groups = {}
     if num_groups < 1:
-        return None
+        num_groups = 1
     for i in range(num_groups):
-        groups["group" + i]["soIds"] = prev_streams[i % (len(prev_streams))][0]
-        groups["group" + i]["stream"] = prev_streams[i % (len(prev_streams))][1]
+        groups['group' + str(i)] = {}
+        groups['group' + str(i)]['soIds'] = [prev_streams[i % (len(prev_streams))][0]]
+        groups['group' + str(i)]['stream'] = prev_streams[i % (len(prev_streams))][1]
 
     return groups
 
@@ -180,12 +180,12 @@ def get_cstreams(config, init_streams, groups):
     num_cstreams = round(eval(config['TOPOLOGIES']['CompositeStreams']))
     cstreams = {}
     if num_cstreams < 1:
-        return {}
+        num_cstreams = 1
     stream_ids = []
     group_ids = []
 
     for i in range(num_cstreams):
-        stream_ids += ['cstream' + i]
+        stream_ids += ['cstream' + str(i)]
 
     stream_ids += init_streams
 
@@ -211,9 +211,9 @@ def get_cstreams(config, init_streams, groups):
         else:
             stream_set = stream_ids
 
-        cstreams['cstream' + i] = get_cstream(config, group_set, stream_set)
+        cstreams['cstream' + str(i)] = get_cstream(config, group_set, stream_set)
 
-    return num_cstreams
+    return cstreams
 
 
 def get_cstream(config, group_subset, stream_subset):
@@ -233,20 +233,20 @@ def get_cstream(config, group_subset, stream_subset):
     json_cstream = json.load(json_file)
     json_file.close()
 
-    json_cstream["pre-filter"] = "@presleep-filter@" + pre_ms + "@postsleep-filter@"
+    json_cstream['pre-filter'] = '@presleep-filter@' + str(pre_ms) + '@postsleep-filter@'
     if pre_prob < 1:
-        json_cstream["pre-filter"] += "false"
+        json_cstream['pre-filter'] += 'false'
     else:
         json_cstream[
-            "pre-filter"] += "{$.lastUpdate} %" + pre_prob + "==" + pre_prob + " - 1"
+            'pre-filter'] += '{$.lastUpdate} %' + str(pre_prob) + '==' + str(pre_prob) + ' - 1'
 
-    json_cstream["post-filter"] = "@presleep-filter@" + pre_ms + "@postsleep-filter@"
+    json_cstream['post-filter'] = '@presleep-filter@' + str(pre_ms) + '@postsleep-filter@'
     if post_prob < 1:
-        json_cstream["post-filter"] += "false"
+        json_cstream['post-filter'] += 'false'
     else:
-        json_cstream["post-filter"] += "{$.lastUpdate}+1 %" + post_prob + "==" + post_prob + " - 1"
+        json_cstream['post-filter'] += '{$.lastUpdate}+1 %' + str(post_prob) + '==' + str(post_prob) + ' - 1'
 
-    json_cstream["channels"] = json_channels
+    json_cstream['channels'] = json_channels
 
     return json_cstream
 
@@ -263,7 +263,7 @@ def get_channels(config, group_subset, stream_subset):
     stream_sets = distribute_operands(stream_subset, num_channels, stream_operands, stream_distribution)
 
     for i in range(num_channels):
-        channels['channel' + i] = get_channel(config, group_sets[i] + stream_sets[i])
+        channels['channel' + str(i)] = get_channel(config, group_sets[i] + stream_sets[i])
 
     return channels
 
@@ -273,8 +273,12 @@ def distribute_operands_det(operands, num_sets, num_members):
     j = 0
     for i in range(num_sets):
         nm = round(eval(num_members))
-        operand_sets[i] += (operands + operands)[j % len(operands):(j + nm) % len(operands) * 2]
-        j += nm
+        if nm > len(operands):
+            nm = len(operands)
+        elif nm < 1:
+            nm = 1
+        operand_sets.append((operands + operands)[j:j + nm])
+        j = (j + nm) % len(operands)
     return operand_sets
 
 
@@ -304,9 +308,9 @@ def get_channel(config, operands):
     json_channel = json.load(json_file)
     json_file.close()
 
-    json_channel["current-value"] = "@presleep-cv@" + ms + "@postsleep-cv@" + "0"
+    json_channel['current-value'] = '@presleep-cv@' + str(ms) + '@postsleep-cv@' + '0'
     for operand in operands:
-        json_channel["current-value"] += "+{$" + operand + ".channels.channel0.current-value}"
+        json_channel['current-value'] += '+{$' + operand + '.channels.channel0.current-value}'
 
     return json_channel
 
@@ -329,5 +333,5 @@ def main():
     new_setup('../benchmark.ini')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
