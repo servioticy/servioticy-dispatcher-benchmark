@@ -227,7 +227,7 @@ def get_cstream(config, group_subset, stream_subset):
     pre_ms = round(eval(config['TOPOLOGIES']['PreFilterMS']))
     post_ms = round(eval(config['TOPOLOGIES']['PostFilterMS']))
     pre_prob = round(eval(config['TOPOLOGIES']['PreFilterProb']))
-    post_prob = round(eval(config['TOPOLOGIES']['PreFilterProb']))
+    post_prob = round(eval(config['TOPOLOGIES']['PostFilterProb']))
 
     if pre_ms < 0:
         pre_ms = 0
@@ -240,16 +240,13 @@ def get_cstream(config, group_subset, stream_subset):
 
     json_cstream['pre-filter'] = '@presleep-filter@' + str(pre_ms) + '@postsleep-filter@'
     if pre_prob < 1:
-        json_cstream['pre-filter'] += 'false'
-    else:
-        json_cstream[
-            'pre-filter'] += '{$.lastUpdate} %' + str(pre_prob) + '==' + str(pre_prob) + ' - 1'
+        pre_prob = 1
+    json_cstream['pre-filter'] += '{$.lastUpdate} %' + str(pre_prob) + '==' + str(pre_prob) + ' - 1'
 
-    json_cstream['post-filter'] = '@presleep-filter@' + str(pre_ms) + '@postsleep-filter@'
+    json_cstream['post-filter'] = '@presleep-filter@' + str(post_ms) + '@postsleep-filter@'
     if post_prob < 1:
-        json_cstream['post-filter'] += 'false'
-    else:
-        json_cstream['post-filter'] += '{$.lastUpdate}+1 %' + str(post_prob) + '==' + str(post_prob) + ' - 1'
+        post_prob = 1
+    json_cstream['post-filter'] += '{$.lastUpdate}+1 %' + str(post_prob) + '==' + str(post_prob) + ' - 1'
 
     json_cstream['channels'] = json_channels
 
