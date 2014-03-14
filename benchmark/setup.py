@@ -229,7 +229,7 @@ def get_cstream(config, group_subset, stream_subset):
     if post_ms < 0:
         post_ms = 0
 
-    json_file = open('./jsons/channel.json')
+    json_file = open('./jsons/stream.json')
     json_cstream = json.load(json_file)
     json_file.close()
 
