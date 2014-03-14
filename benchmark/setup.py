@@ -2,6 +2,7 @@ __author__ = 'alvaro'
 
 import configparser
 import json
+import random
 
 import httplib2
 
@@ -154,8 +155,12 @@ def get_groups(config, prev_streams):
         not_found = True
         while not_found:
             sel_stream = round(eval(config['TOPOLOGIES']['MemberDistribution']))
-            if sel_stream < 0 or sel_stream >= len(prev_streams):
-                continue
+            # if sel_stream < 0 or sel_stream >= len(prev_streams):
+            #     continue
+            if sel_stream < 0:
+                sel_stream = 0
+            elif sel_stream >= len(prev_streams):
+                sel_stream = len(prev_streams) - 1
             groups['group' + str(i)] = {}
             groups['group' + str(i)]['soIds'] = [prev_streams[sel_stream][0]]
             groups['group' + str(i)]['stream'] = prev_streams[sel_stream][1]
@@ -298,8 +303,12 @@ def distribute_operands(operands, num_sets, num_members, distribution):
             not_found = True
             while not_found:
                 sel_operand = round(eval(distribution))
-                if sel_operand < 0 or sel_operand >= len(operands):
-                    continue
+                # if sel_operand < 0 or sel_operand >= len(operands):
+                #     continue
+                if sel_operand < 0:
+                    sel_operand = 0
+                elif sel_operand >= len(operands):
+                    sel_operand = len(operands) - 1
                 operand_sets[i] += [operands[sel_operand]]
                 not_found = False
     return operand_sets
