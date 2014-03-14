@@ -156,7 +156,7 @@ def get_groups(config, prev_streams):
             sel_stream = round(eval(config['TOPOLOGIES']['MemberDistribution']))
             if sel_stream < 0 or sel_stream >= len(prev_streams):
                 continue
-
+            groups['group' + str(i)] = {}
             groups['group' + str(i)]['soIds'] = [prev_streams[sel_stream][0]]
             groups['group' + str(i)]['stream'] = prev_streams[sel_stream][1]
             not_found = False
@@ -254,6 +254,8 @@ def get_cstream(config, group_subset, stream_subset):
 def get_channels(config, group_subset, stream_subset):
     channels = {}
     num_channels = round(eval(config['TOPOLOGIES']['Channels']))
+    if num_channels < 1:
+        num_channels = 1
     group_distribution = config['TOPOLOGIES']['GroupDistribution']
     group_operands = config['TOPOLOGIES']['GroupOperands']
     stream_distribution = config['TOPOLOGIES']['StreamRefsDistribution']
@@ -287,10 +289,13 @@ def distribute_operands(operands, num_sets, num_members, distribution):
         return distribute_operands_det(operands, num_sets, num_members)
     operand_sets = []
     for i in range(num_sets):
-        not_found = True
-        operand_sets[i] = []
+        operand_sets.append([])
         nm = round(eval(num_members))
+
+        if nm < 1:
+            nm = 1
         for j in range(nm):
+            not_found = True
             while not_found:
                 sel_operand = round(eval(distribution))
                 if sel_operand < 0 or sel_operand >= len(operands):
