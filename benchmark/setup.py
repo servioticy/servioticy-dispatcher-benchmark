@@ -1,8 +1,9 @@
+import time
+
 __author__ = 'alvaro'
 
 import configparser
 import json
-import random
 import networkx as nx
 import pylab as p
 
@@ -11,7 +12,30 @@ import httplib2
 
 class Setup:
     def __init__(self, config_path):
-        self.topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
+        self.topologies = []
+        self.config = configparser.ConfigParser()
+        self.initial_streams = []
+
+        self.config.read(config_path)
+
+        num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
+        if num_topologies < 1:
+            num_topologies = 1
+        for i in range(num_topologies):
+            self.topologies.append(Topology(config_path))
+            self.initial_streams += self.topologies[-1].initial_streams
+        return
+
+    def write_initial_streams(self, out_path):
+        # Store the initial streams in the out_path
+        f = open(out_path, 'w')
+        f.write(json.dumps(self.initial_streams))
+        f.close()
+        return
+
+
+class Topology:
+    def __init__(self, config_path):
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
@@ -21,17 +45,13 @@ class Setup:
 
         self.config.read(config_path)
 
-        if self.num_topologies < 1:
-            self.num_topologies = 1
-        for i in range(self.num_topologies):
-            self.put_topology()
-        return
-
-    def write_initial_streams(self, out_path):
-        # Store the initial streams in the out_path
-        f = open(out_path, 'w')
-        f.write(json.dumps(self.initial_streams))
-        f.close()
+        num_sos = round(eval(self.config['TOPOLOGIES']['SOs']))
+        if num_sos < 1:
+            num_sos = 1
+        self.put_initial_so()
+        num_sos -= 1
+        for i in range(num_sos):
+            self.put_so()
         return
 
     def put_topology(self):
@@ -341,8 +361,8 @@ class Setup:
 
         return json_channel
 
-
     def request(self, partial_url, method, body):
+        time.sleep(1)
         headers = {
             'Authorization': self.config['API']['AuthToken'],
             'Content-Type': 'application/json; charset=UTF-8'
@@ -355,20 +375,30 @@ class Setup:
             headers)
         return response, content.decode('utf-8')
 
+    def draw_so_graph(self, figure):
+        p.figure(figure)
+        nx.draw_networkx(self.so_graph, with_labels=False)
+        return
+
+    def draw_stream_graph(self, figure):
+        p.figure(figure)
+        nx.draw_networkx(self.stream_graph, with_labels=False)
+        return
+
+    def draw_channel_graph(self, figure):
+        p.figure(figure)
+        nx.draw_networkx(self.channel_graph, with_labels=False)
+        return
+
 
 def main():
     setup = Setup('../benchmark.ini')
     setup.write_initial_streams('streams.json')
 
-    graphs = nx.weakly_connected_subgraphs(setup.so_graph)
-    for i in range(len(graphs)):
-        p.figure("SO - Topology " + i)
-        nx.draw_networkx(graphs[i], with_labels=False)
-
-        # p.figure("Streams - Topology "+i)
-        # nx.draw_networkx(setup.stream_graph, with_labels=False)
-        # p.figure("Channels - Topology "+i)
-        # nx.draw_networkx(setup.channel_graph, with_labels=False)
+    for i in range(len(setup.topologies)):
+        setup.topologies[i].draw_so_graph(i)
+    p.show()
+    return
 
 
 if __name__ == '__main__':
