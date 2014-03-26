@@ -4,6 +4,7 @@ import configparser
 import json
 import random
 import networkx as nx
+import pylab as p
 
 import httplib2
 
@@ -13,9 +14,9 @@ class Setup:
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
-        self.so_graph = nx.Graph()
-        self.stream_graph = nx.Graph()
-        self.channel_graph = nx.Graph()
+        self.so_graph = nx.DiGraph()
+        self.stream_graph = nx.DiGraph()
+        self.channel_graph = nx.DiGraph()
 
         self.config.read(config_path)
         num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
@@ -65,9 +66,15 @@ class Setup:
             return []
         json_content = json.loads(content)
         so_id = json_content['id']
+
+        self.so_graph.add_node(so_id)
+
         for stream in streams:
             self.initial_streams += [[so_id, stream]]
             self.streams += [[so_id, stream]]
+
+            self.stream_graph.add_node(so_id + ":" + stream)
+
         return
 
     def put_so(self):
@@ -99,19 +106,31 @@ class Setup:
         json_so['groups'] = self.make_groups()
 
         # CStreams
+        cstreams = self.make_cstreams(stream_ids, json_so['groups'])
         json_so['streams'] = dict(
-            list(json_so['streams'].items()) + list(self.make_cstreams(stream_ids, json_so['groups']).items()))
+            list(json_so['streams'].items()) + list(cstreams.items()))
         response, content = self.request('', 'POST', json.dumps(json_so))
         if int(response['status']) >= 300:
             print(content + '\n')
             return [], []
         json_content = json.loads(content)
         so_id = json_content['id']
+
+        self.so_graph.add_node(so_id)
+
+        for k in json_so['groups'].keys():
+            for soid in json_so['groups'][k]["soIds"]:
+                self.so_graph.add_edge(so_id, soid)
+
         for stream_id in stream_ids:
             self.streams += [[so_id, stream_id]]
 
+            self.stream_graph.add_node(so_id + ":" + stream_id)
+
         for initial_stream_id in initial_stream_ids:
             self.initial_streams += [[so_id, initial_stream_id]]
+
+            self.stream_graph.add_node(so_id + ":" + initial_stream_id)
 
         return
 
@@ -339,6 +358,9 @@ class Setup:
 def main():
     setup = Setup('../benchmark.ini')
     setup.write_initial_streams('streams.json')
+
+    nx.draw(setup.so_graph)
+    p.show()
 
 
 if __name__ == '__main__':
