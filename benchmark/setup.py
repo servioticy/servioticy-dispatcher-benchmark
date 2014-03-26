@@ -3,6 +3,7 @@ __author__ = 'alvaro'
 import configparser
 import json
 import random
+import networkx as nx
 
 import httplib2
 
@@ -12,6 +13,9 @@ class Setup:
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
+        self.so_graph = nx.Graph()
+        self.stream_graph = nx.Graph()
+        self.channel_graph = nx.Graph()
 
         self.config.read(config_path)
         num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
@@ -333,7 +337,8 @@ class Setup:
 
 
 def main():
-    new_setup('../benchmark.ini', 'streams.json')
+    setup = Setup('../benchmark.ini')
+    setup.write_initial_streams('streams.json')
 
 
 if __name__ == '__main__':
