@@ -11,6 +11,7 @@ import httplib2
 
 class Setup:
     def __init__(self, config_path):
+        self.topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
@@ -19,10 +20,10 @@ class Setup:
         self.channel_graph = nx.DiGraph()
 
         self.config.read(config_path)
-        num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
-        if num_topologies < 1:
-            num_topologies = 1
-        for i in range(num_topologies):
+
+        if self.num_topologies < 1:
+            self.num_topologies = 1
+        for i in range(self.num_topologies):
             self.put_topology()
         return
 
@@ -359,8 +360,15 @@ def main():
     setup = Setup('../benchmark.ini')
     setup.write_initial_streams('streams.json')
 
-    nx.draw(setup.so_graph)
-    p.show()
+    graphs = nx.weakly_connected_subgraphs(setup.so_graph)
+    for i in range(len(graphs)):
+        p.figure("SO - Topology " + i)
+        nx.draw_networkx(graphs[i], with_labels=False)
+
+        # p.figure("Streams - Topology "+i)
+        # nx.draw_networkx(setup.stream_graph, with_labels=False)
+        # p.figure("Channels - Topology "+i)
+        # nx.draw_networkx(setup.channel_graph, with_labels=False)
 
 
 if __name__ == '__main__':
