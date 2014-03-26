@@ -4,6 +4,7 @@ __author__ = 'alvaro'
 
 import configparser
 import json
+import random
 import networkx as nx
 import pylab as p
 
@@ -53,17 +54,6 @@ class Topology:
         for i in range(num_sos):
             self.put_so()
         return
-
-    def put_topology(self):
-        num_sos = round(eval(self.config['TOPOLOGIES']['SOs']))
-        if num_sos < 1:
-            num_sos = 1
-        self.put_initial_so()
-        num_sos -= 1
-        for i in range(num_sos):
-            self.put_so()
-        return
-
 
     def put_initial_so(self):
         streams = []
@@ -362,7 +352,7 @@ class Topology:
         return json_channel
 
     def request(self, partial_url, method, body):
-        time.sleep(1)
+        time.sleep(0.5)
         headers = {
             'Authorization': self.config['API']['AuthToken'],
             'Content-Type': 'application/json; charset=UTF-8'
