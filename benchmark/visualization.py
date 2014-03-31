@@ -15,10 +15,12 @@ def main():
     elif os.path.isfile(sys.argv[1]):
         graphs.append(nx.read_gml(sys.argv[1]))
 
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
+        label = sys.argv[2]
+        if len(sys.argv) > 3:
+            label += ":" + sys.argv[3]
         for graph in graphs:
             for i in range(len(graph.node)):
-                label = sys.argv[2]
                 current_label = graph.node[i]['label']
                 if current_label == label:
                     p.figure(label)
