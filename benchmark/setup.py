@@ -284,12 +284,12 @@ class Topology:
         json_cstream['pre-filter'] = '@presleep-filter@' + str(pre_ms) + '@postsleep-filter@'
         if pre_prob < 1:
             pre_prob = 1
-        json_cstream['pre-filter'] += '{$.lastUpdate} %' + str(pre_prob) + '==' + str(pre_prob) + ' - 1'
+        json_cstream['pre-filter'] += '{$.lastUpdate} %' + str(pre_prob) + '==(' + str(pre_prob) + ' - 1)'
 
         json_cstream['post-filter'] = '@presleep-filter@' + str(post_ms) + '@postsleep-filter@'
         if post_prob < 1:
             post_prob = 1
-        json_cstream['post-filter'] += '{$.lastUpdate}+1 %' + str(post_prob) + '==' + str(post_prob) + ' - 1'
+        json_cstream['post-filter'] += '({$.lastUpdate}+1) %' + str(post_prob) + '==(' + str(post_prob) + ' - 1)'
 
         json_cstream['channels'] = json_channels
 
@@ -390,10 +390,10 @@ def main():
     setup.write_initial_streams(setup.config['TOPOLOGIES']['InitialStreamsFile'])
 
     for i in range(len(setup.topologies)):
-        nx.write_gml(setup.config['TOPOLOGIES']['GraphsDir'] + setup.topologies[i].so_graph,
-                     'so_graph_' + str(i) + '.gml')
-        nx.write_gml(setup.config['TOPOLOGIES']['GraphsDir'] + setup.topologies[i].stream_graph,
-                     'stream_graph_' + str(i) + '.gml')
+        nx.write_gml(setup.topologies[i].so_graph,
+                     setup.config['TOPOLOGIES']['GraphsDir'] + 'so_graph_' + str(i) + '.gml')
+        nx.write_gml(setup.topologies[i].stream_graph,
+                     setup.config['TOPOLOGIES']['GraphsDir'] + 'stream_graph_' + str(i) + '.gml')
     p.show()
     return
 
