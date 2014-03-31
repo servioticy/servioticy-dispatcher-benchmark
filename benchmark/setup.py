@@ -119,7 +119,7 @@ class Topology:
         json_so['groups'] = self.make_groups()
 
         # CStreams
-        cstreams = self.make_cstreams(stream_ids, json_so['groups'])
+        input_sets, cstreams = self.make_cstreams(stream_ids, json_so['groups'])
         json_so['streams'] = dict(
             list(json_so['streams'].items()) + list(cstreams.items()))
         response, content = self.request('', 'POST', json.dumps(json_so))
@@ -133,7 +133,21 @@ class Topology:
 
         for k in json_so['groups'].keys():
             for soid in json_so['groups'][k]["soIds"]:
-                self.so_graph.add_edge(so_id, soid)
+                self.so_graph.add_edge(soid, so_id)
+
+        for k in input_sets.keys():
+            self.stream_graph.add_node(so_id + ":" + k)
+            for group_ids in input_sets[k]['groups']:
+                for group_id in group_ids:
+                    for group in json_so['groups'][group_id]:
+                        for soId in json_so['groups'][group_id]["soIds"]:
+                            self.stream_graph.add_edge(soId + ":" + json_so['groups'][group_id]["stream"],
+                                                       so_id + ":" + k)
+
+            for stream_ids in input_sets[k]['streams']:
+                for stream_id in stream_ids:
+                    self.stream_graph.add_edge(soId + ":" + stream_id, so_id + ":" + k)
+
 
         for stream_id in stream_ids:
             self.streams += [[so_id, stream_id]]
@@ -148,7 +162,7 @@ class Topology:
         return
 
     def make_stream(self):
-        num_channels = round(eval(self.config['TOPOLOGIES']['Channels']))
+        num_channels = 1  # round(eval(self.config['TOPOLOGIES']['Channels']))
         if num_channels < 1:
             num_channels = 1
         json_file = open('./jsons/initial_stream.json')
@@ -212,6 +226,7 @@ class Topology:
     def make_cstreams(self, init_streams, groups):
         num_cstreams = round(eval(self.config['TOPOLOGIES']['CompositeStreams']))
         cstreams = {}
+        input_sets = {}
         if num_cstreams < 1:
             num_cstreams = 1
         stream_ids = []
@@ -244,13 +259,13 @@ class Topology:
             else:
                 stream_set = stream_ids
 
-            cstreams['cstream' + str(i)] = self.make_cstream(group_set, stream_set)
+            input_sets['cstream' + str(i)], cstreams['cstream' + str(i)] = self.make_cstream(group_set, stream_set)
 
-        return cstreams
+        return input_sets, cstreams
 
 
     def make_cstream(self, group_subset, stream_subset):
-        json_channels = self.make_channels(group_subset, stream_subset)
+        input_sets, json_channels = self.make_channels(group_subset, stream_subset)
 
         pre_ms = round(eval(self.config['TOPOLOGIES']['PreFilterMS']))
         post_ms = round(eval(self.config['TOPOLOGIES']['PostFilterMS']))
@@ -278,7 +293,7 @@ class Topology:
 
         json_cstream['channels'] = json_channels
 
-        return json_cstream
+        return input_sets, json_cstream
 
 
     def make_channels(self, group_subset, stream_subset):
@@ -294,10 +309,12 @@ class Topology:
         group_sets = self.distribute_operands(group_subset, num_channels, group_operands, group_distribution)
         stream_sets = self.distribute_operands(stream_subset, num_channels, stream_operands, stream_distribution)
 
+        input_sets = {"groups": group_sets, "streams": stream_sets}
+
         for i in range(num_channels):
             channels['channel' + str(i)] = self.make_channel(group_sets[i] + stream_sets[i])
 
-        return channels
+        return input_sets, channels
 
 
     def distribute_operands_det(self, operands, num_sets, num_members):
@@ -367,28 +384,16 @@ class Topology:
             headers)
         return response, content.decode('utf-8')
 
-    def draw_so_graph(self, figure):
-        p.figure(figure)
-        nx.draw_networkx(self.so_graph, with_labels=False)
-        return
-
-    def draw_stream_graph(self, figure):
-        p.figure(figure)
-        nx.draw_networkx(self.stream_graph, with_labels=False)
-        return
-
-    def draw_channel_graph(self, figure):
-        p.figure(figure)
-        nx.draw_networkx(self.channel_graph, with_labels=False)
-        return
-
 
 def main():
     setup = Setup('../benchmark.ini')
-    setup.write_initial_streams('streams.json')
+    setup.write_initial_streams(setup.config['TOPOLOGIES']['InitialStreamsFile'])
 
     for i in range(len(setup.topologies)):
-        setup.topologies[i].draw_so_graph(i)
+        nx.write_gml(setup.config['TOPOLOGIES']['GraphsDir'] + setup.topologies[i].so_graph,
+                     'so_graph_' + str(i) + '.gml')
+        nx.write_gml(setup.config['TOPOLOGIES']['GraphsDir'] + setup.topologies[i].stream_graph,
+                     'stream_graph_' + str(i) + '.gml')
     p.show()
     return
 
