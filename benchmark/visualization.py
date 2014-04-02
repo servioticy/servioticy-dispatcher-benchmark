@@ -27,12 +27,12 @@ def main():
                     for node in G.node:
                         G.add_edges_from(nx.bfs_edges(graphs[graph_key], node))
                     p.figure(graph_key + " - " + label)
-                    nx.draw_networkx(G, with_labels=False)
+                    nx.draw_spring(G, with_labels=False)
 
     else:
         for graph_key in graphs.keys():
             p.figure(graph_key)
-            nx.draw_networkx(graphs[graph_key], with_labels=False)
+            nx.draw_spring(graphs[graph_key], with_labels=True)
 
     p.show()
     return

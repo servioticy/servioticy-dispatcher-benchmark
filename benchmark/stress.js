@@ -27,15 +27,15 @@ var flow = {
     before: [],      // operations to do before anything
     beforeMain: [],  // operations to do before each iteration
     main: [  // the main flow for each iteration, #{INDEX} is unique iteration counter token
-        { put: urlgenerator, headers: {"Content-Type": "application/json", "Authorization": "MWRiODFmZjAtMWQyYS00MDQ0LTg1ZDQtZGE2NzVkMGYwNDYzOGM2YjE1NTUtZmNjNi00MGYyLWI4NTEtNzdiMjQxMDZhZWEz"}, json: {"channels": {"channel0": {"current-value": 1}}, "lastUpdate": new Date().getTime()} },
+        { put: urlgenerator, headers: {"Content-Type": "application/json", "Authorization": "MWRiODFmZjAtMWQyYS00MDQ0LTg1ZDQtZGE2NzVkMGYwNDYzOGM2YjE1NTUtZmNjNi00MGYyLWI4NTEtNzdiMjQxMDZhZWEz"}, json: {"channels": {"channel0": {"current-value": 1}}, "lastUpdate": new Date().getTime()} }
     ],
     afterMain: [
     ],   // operations to do after each iteration
     after: []        // operations to do after everything is done
 };
 var runOptions = {
-    limit: 2,         // concurrent connections
-    iterations: 2,  // number of iterations to perform
+    limit: 10,         // concurrent connections
+    iterations: 100,  // number of iterations to perform
     prealloc: 100      // only preallocate up to 100 before starting
 };
 var errors = [];

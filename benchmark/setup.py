@@ -49,10 +49,9 @@ class Topology:
         self.config.read(config_path)
 
         num_sos = round(eval(self.config['TOPOLOGIES']['SOs']))
-        if num_sos < 1:
-            num_sos = 1
+        if num_sos < 0:
+            num_sos = 0
         self.put_initial_so()
-        num_sos -= 1
         for i in range(num_sos):
             self.put_so()
         return
@@ -96,8 +95,8 @@ class Topology:
         initial_streams = []
         streams = []
         num_streams = round(eval(self.config['TOPOLOGIES']['Streams']))
-        if num_streams < 1:
-            num_streams = 1
+        if num_streams < 0:
+            num_streams = 0
 
         json_file = open('./jsons/so.json')
         json_so = json.load(json_file)
@@ -130,6 +129,12 @@ class Topology:
         so_id = json_content['id']
 
         self.so_graph.add_node(so_id)
+        for initial_stream_id in initial_stream_ids:
+            self.initial_streams += [[so_id, initial_stream_id]]
+            self.stream_graph.add_node(so_id + ":" + initial_stream_id)
+        for stream_id in stream_ids:
+            self.streams += [[so_id, stream_id]]
+            self.stream_graph.add_node(so_id + ":" + stream_id)
 
         for k in json_so['groups'].keys():
             for soid in json_so['groups'][k]["soIds"]:
@@ -146,18 +151,8 @@ class Topology:
 
             for stream_ids in input_sets[k]['streams']:
                 for stream_id in stream_ids:
-                    self.stream_graph.add_edge(soId + ":" + stream_id, so_id + ":" + k)
+                    self.stream_graph.add_edge(so_id + ":" + stream_id, so_id + ":" + k)
 
-
-        for stream_id in stream_ids:
-            self.streams += [[so_id, stream_id]]
-
-            self.stream_graph.add_node(so_id + ":" + stream_id)
-
-        for initial_stream_id in initial_stream_ids:
-            self.initial_streams += [[so_id, initial_stream_id]]
-
-            self.stream_graph.add_node(so_id + ":" + initial_stream_id)
 
         return
 
