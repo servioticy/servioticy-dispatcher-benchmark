@@ -112,13 +112,12 @@ class Topology:
 
             json_so['streams']['stream' + str(i)] = json_stream
             initial_stream_ids += ['stream' + str(i)]
-            stream_ids += ['stream' + str(i)]
 
         # Groups
         json_so['groups'] = self.make_groups()
 
         # CStreams
-        input_sets, cstreams = self.make_cstreams(stream_ids, json_so['groups'])
+        input_sets, cstreams = self.make_cstreams(initial_stream_ids, json_so['groups'])
         json_so['streams'] = dict(
             list(json_so['streams'].items()) + list(cstreams.items()))
         response, content = self.request('', 'POST', json.dumps(json_so))
@@ -132,7 +131,7 @@ class Topology:
         for initial_stream_id in initial_stream_ids:
             self.initial_streams += [[so_id, initial_stream_id]]
             self.stream_graph.add_node(so_id + ":" + initial_stream_id)
-        for stream_id in stream_ids:
+        for stream_id in json_so['streams'].keys():
             self.streams += [[so_id, stream_id]]
             self.stream_graph.add_node(so_id + ":" + stream_id)
 
@@ -227,9 +226,6 @@ class Topology:
         stream_ids = []
         group_ids = []
 
-        for i in range(num_cstreams):
-            stream_ids += ['cstream' + str(i)]
-
         stream_ids += init_streams
 
         for key in groups.keys():
@@ -241,6 +237,8 @@ class Topology:
         for i in range(num_cstreams):
             group_set = []
             stream_set = []
+            stream_ids += ['cstream' + str(
+                i)]  # If this is generated in another for i in range(num_cstreams) outside, it would generate cycles.
             ratio = round(len(group_ids) / num_cstreams)
             if ratio < 1:
                 ratio = 1

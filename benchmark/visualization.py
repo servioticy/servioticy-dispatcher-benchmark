@@ -27,6 +27,7 @@ def main():
                     for node in G.node:
                         G.add_edges_from(nx.bfs_edges(graphs[graph_key], node))
                     p.figure(graph_key + " - " + label)
+                    print(str(len(G.node)) + '\n')
                     nx.draw_spring(G, with_labels=False)
 
     else:
