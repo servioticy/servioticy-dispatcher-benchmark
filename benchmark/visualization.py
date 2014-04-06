@@ -1,10 +1,10 @@
 __author__ = 'alvaro'
 
 import sys
+import os
+
 import networkx as nx
 import pylab as p
-import random
-import os
 
 
 def main():
@@ -24,11 +24,12 @@ def main():
                 current_label = graphs[graph_key].node[i]['label']
                 if current_label == label:
                     G = nx.bfs_tree(graphs[graph_key], i)
+                    G.add_node(i)
                     for node in G.node:
                         G.add_edges_from(nx.bfs_edges(graphs[graph_key], node))
                     p.figure(graph_key + " - " + label)
                     print(str(len(G.node)) + '\n')
-                    nx.draw_spring(G, with_labels=False)
+                    nx.draw_spring(G, with_labels=True)
 
     else:
         for graph_key in graphs.keys():

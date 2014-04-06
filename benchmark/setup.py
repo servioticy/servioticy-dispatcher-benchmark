@@ -179,8 +179,9 @@ class Topology:
 
 
     def make_groups(self):
-        num_groups = round(eval(self.config['TOPOLOGIES']['Groups']))
+        num_groups = round(eval(self.config['TOPOLOGIES']['MaxGroups']))
         member_distribution = self.config['TOPOLOGIES']['MemberDistribution']
+        available_streams = self.streams
         groups = {}
         if num_groups < 1:
             num_groups = 1
@@ -189,30 +190,38 @@ class Topology:
 
         for i in range(num_groups):
             not_found = True
+            if len(available_streams) == 0:
+                break
             while not_found:
                 sel_stream = round(eval(self.config['TOPOLOGIES']['MemberDistribution']))
                 # if sel_stream < 0 or sel_stream >= len(prev_streams):
                 #     continue
                 if sel_stream < 0:
                     sel_stream = 0
-                elif sel_stream >= len(self.streams):
-                    sel_stream = len(self.streams) - 1
+                elif sel_stream >= len(available_streams):
+                    sel_stream = len(available_streams) - 1
                 groups['group' + str(i)] = {}
-                groups['group' + str(i)]['soIds'] = [self.streams[sel_stream][0]]
-                groups['group' + str(i)]['stream'] = self.streams[sel_stream][1]
+                groups['group' + str(i)]['soIds'] = [available_streams[sel_stream][0]]
+                groups['group' + str(i)]['stream'] = available_streams[sel_stream][1]
+                available_streams.pop(sel_stream)
                 not_found = False
         return groups
 
 
     def make_groups_det(self):
-        num_groups = round(eval(self.config['TOPOLOGIES']['Groups']))
+        num_groups = round(eval(self.config['TOPOLOGIES']['MaxGroups']))
+        available_streams = self.streams
         groups = {}
         if num_groups < 1:
             num_groups = 1
         for i in range(num_groups):
+            if len(available_streams) == 0:
+                break
+            sel_stream = i % (len(available_streams))
             groups['group' + str(i)] = {}
-            groups['group' + str(i)]['soIds'] = [self.streams[i % (len(self.streams))][0]]
-            groups['group' + str(i)]['stream'] = self.streams[i % (len(self.streams))][1]
+            groups['group' + str(i)]['soIds'] = [available_streams[sel_stream][0]]
+            groups['group' + str(i)]['stream'] = available_streams[sel_stream][1]
+            available_streams.pop(sel_stream)
 
         return groups
 
