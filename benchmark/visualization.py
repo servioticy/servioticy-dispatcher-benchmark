@@ -24,17 +24,25 @@ def main():
                 current_label = graphs[graph_key].node[i]['label']
                 if current_label == label:
                     G = nx.bfs_tree(graphs[graph_key], i)
-                    G.add_node(i)
+
+                    node_colors = ['r'] * len(G.node)
+                    node_colors[0] = 'b';
                     for node in G.node:
                         G.add_edges_from(nx.bfs_edges(graphs[graph_key], node))
                     p.figure(graph_key + " - " + label)
                     print(str(len(G.node)) + '\n')
-                    nx.draw_spring(G, with_labels=True)
+                    nx.draw_spring(G, with_labels=True, node_color=node_colors)
 
     else:
         for graph_key in graphs.keys():
+            node_colors = ['r'] * len(graphs[graph_key].node)
+            in_degrees = graphs[graph_key].in_degree(graphs[graph_key])
+            for n in graphs[graph_key].nodes():
+                if in_degrees[n] == 0:
+                    node_colors[n] = 'b'
+
             p.figure(graph_key)
-            nx.draw_spring(graphs[graph_key], with_labels=True)
+            nx.draw_spring(graphs[graph_key], with_labels=True, node_color=node_colors)
 
     p.show()
     return
