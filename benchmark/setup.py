@@ -193,13 +193,15 @@ class Topology:
             if len(available_streams) == 0:
                 break
             while not_found:
-                sel_stream = round(eval(self.config['TOPOLOGIES']['MemberDistribution']))
+                sel_stream = eval(member_distribution)
                 # if sel_stream < 0 or sel_stream >= len(prev_streams):
                 #     continue
                 if sel_stream < 0:
                     sel_stream = 0
-                elif sel_stream >= len(available_streams):
+                elif sel_stream > 1:
                     sel_stream = len(available_streams) - 1
+                else:
+                    sel_stream = round(sel_stream * (len(available_streams) - 1))
                 groups['group' + str(i)] = {}
                 groups['group' + str(i)]['soIds'] = [available_streams[sel_stream][0]]
                 groups['group' + str(i)]['stream'] = available_streams[sel_stream][1]
@@ -351,8 +353,10 @@ class Topology:
                     #     continue
                     if sel_operand < 0:
                         sel_operand = 0
-                    elif sel_operand >= len(operands):
+                    elif sel_operand > 1:
                         sel_operand = len(operands) - 1
+                    else:
+                        sel_operand = round(sel_operand * (len(operands) - 1))
                     operand_sets[i] += [operands[sel_operand]]
                     not_found = False
         return operand_sets
