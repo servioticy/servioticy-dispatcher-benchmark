@@ -102,10 +102,6 @@ class Topology:
         json_so = json.load(json_file)
         json_file.close()
 
-        # Aliases
-
-        json_so['aliases'] = self.make_aliases()
-
         # Streams
         for i in range(num_streams):
             json_stream = self.make_stream()
@@ -171,13 +167,6 @@ class Topology:
             json_stream['channels']['channel' + str(i)] = json_channel
 
         return json_stream
-
-    def make_aliases(self):
-        json_file = open('./jsons/aliases.json')
-        json_aliases = json.load(json_file)
-        json_file.close()
-        return json_aliases
-
 
     def make_groups(self):
         num_groups = round(eval(self.config['TOPOLOGIES']['Groups']))
@@ -276,12 +265,15 @@ class Topology:
         json_cstream = json.load(json_file)
         json_file.close()
 
-        json_cstream['pre-filter'] = '@presleep-filter@' + str(pre_ms) + '@postsleep-filter@'
+        presleepfilter = 'true);var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>'
+        postsleepfilter = '){break;}}result = Boolean('
+
+        json_cstream['pre-filter'] = presleepfilter + str(pre_ms) + postsleepfilter
         if pre_prob < 1:
             pre_prob = 1
         json_cstream['pre-filter'] += '{$.lastUpdate} %' + str(pre_prob) + '==(' + str(pre_prob) + ' - 1)'
 
-        json_cstream['post-filter'] = '@presleep-filter@' + str(post_ms) + '@postsleep-filter@'
+        json_cstream['post-filter'] = presleepfilter + str(post_ms) + postsleepfilter
         if post_prob < 1:
             post_prob = 1
         json_cstream['post-filter'] += '({$.lastUpdate}+1) %' + str(post_prob) + '==(' + str(post_prob) + ' - 1)'
@@ -359,7 +351,9 @@ class Topology:
         json_channel = json.load(json_file)
         json_file.close()
 
-        json_channel['current-value'] = '@presleep-cv@' + str(ms) + '@postsleep-cv@' + '0'
+        json_channel[
+            'current-value'] = '0);var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>' + str(
+            ms) + '){break;}}result = Number(0'
         for operand in operands:
             json_channel['current-value'] += '+{$' + operand + '.channels.channel0.current-value}'
 
