@@ -108,13 +108,12 @@ class Topology:
 
             json_so['streams']['stream' + str(i)] = json_stream
             initial_stream_ids += ['stream' + str(i)]
-            stream_ids += ['stream' + str(i)]
 
         # Groups
         json_so['groups'] = self.make_groups()
 
         # CStreams
-        input_sets, cstreams = self.make_cstreams(stream_ids, json_so['groups'])
+        input_sets, cstreams = self.make_cstreams(initial_stream_ids, json_so['groups'])
         json_so['streams'] = dict(
             list(json_so['streams'].items()) + list(cstreams.items()))
         response, content = self.request('', 'POST', json.dumps(json_so))
@@ -128,7 +127,7 @@ class Topology:
         for initial_stream_id in initial_stream_ids:
             self.initial_streams += [[so_id, initial_stream_id]]
             self.stream_graph.add_node(so_id + ":" + initial_stream_id)
-        for stream_id in stream_ids:
+        for stream_id in json_so['streams'].keys():
             self.streams += [[so_id, stream_id]]
             self.stream_graph.add_node(so_id + ":" + stream_id)
 
@@ -169,8 +168,9 @@ class Topology:
         return json_stream
 
     def make_groups(self):
-        num_groups = round(eval(self.config['TOPOLOGIES']['Groups']))
+        num_groups = round(eval(self.config['TOPOLOGIES']['MaxGroups']))
         member_distribution = self.config['TOPOLOGIES']['MemberDistribution']
+        available_streams = self.streams
         groups = {}
         if num_groups < 1:
             num_groups = 1
@@ -179,30 +179,40 @@ class Topology:
 
         for i in range(num_groups):
             not_found = True
+            if len(available_streams) == 0:
+                break
             while not_found:
-                sel_stream = round(eval(self.config['TOPOLOGIES']['MemberDistribution']))
+                sel_stream = eval(member_distribution)
                 # if sel_stream < 0 or sel_stream >= len(prev_streams):
                 #     continue
                 if sel_stream < 0:
                     sel_stream = 0
-                elif sel_stream >= len(self.streams):
-                    sel_stream = len(self.streams) - 1
+                elif sel_stream > 1:
+                    sel_stream = len(available_streams) - 1
+                else:
+                    sel_stream = round(sel_stream * (len(available_streams) - 1))
                 groups['group' + str(i)] = {}
-                groups['group' + str(i)]['soIds'] = [self.streams[sel_stream][0]]
-                groups['group' + str(i)]['stream'] = self.streams[sel_stream][1]
+                groups['group' + str(i)]['soIds'] = [available_streams[sel_stream][0]]
+                groups['group' + str(i)]['stream'] = available_streams[sel_stream][1]
+                available_streams.pop(sel_stream)
                 not_found = False
         return groups
 
 
     def make_groups_det(self):
-        num_groups = round(eval(self.config['TOPOLOGIES']['Groups']))
+        num_groups = round(eval(self.config['TOPOLOGIES']['MaxGroups']))
+        available_streams = self.streams
         groups = {}
         if num_groups < 1:
             num_groups = 1
         for i in range(num_groups):
+            if len(available_streams) == 0:
+                break
+            sel_stream = i % (len(available_streams))
             groups['group' + str(i)] = {}
-            groups['group' + str(i)]['soIds'] = [self.streams[i % (len(self.streams))][0]]
-            groups['group' + str(i)]['stream'] = self.streams[i % (len(self.streams))][1]
+            groups['group' + str(i)]['soIds'] = [available_streams[sel_stream][0]]
+            groups['group' + str(i)]['stream'] = available_streams[sel_stream][1]
+            available_streams.pop(sel_stream)
 
         return groups
 
@@ -216,9 +226,6 @@ class Topology:
         stream_ids = []
         group_ids = []
 
-        for i in range(num_cstreams):
-            stream_ids += ['cstream' + str(i)]
-
         stream_ids += init_streams
 
         for key in groups.keys():
@@ -230,6 +237,8 @@ class Topology:
         for i in range(num_cstreams):
             group_set = []
             stream_set = []
+            stream_ids += ['cstream' + str(
+                i)]  # If this is generated in another for i in range(num_cstreams) outside, it would generate cycles.
             ratio = round(len(group_ids) / num_cstreams)
             if ratio < 1:
                 ratio = 1
@@ -336,8 +345,10 @@ class Topology:
                     #     continue
                     if sel_operand < 0:
                         sel_operand = 0
-                    elif sel_operand >= len(operands):
+                    elif sel_operand > 1:
                         sel_operand = len(operands) - 1
+                    else:
+                        sel_operand = round(sel_operand * (len(operands) - 1))
                     operand_sets[i] += [operands[sel_operand]]
                     not_found = False
         return operand_sets
