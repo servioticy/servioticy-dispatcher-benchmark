@@ -36,7 +36,6 @@ class Setup:
         f.close()
         return
 
-
 class Topology:
     def __init__(self, config_path):
         self.config = configparser.ConfigParser()
@@ -272,6 +271,7 @@ class Topology:
     def make_channels(self, group_subset, stream_subset):
         channels = {}
         num_channels = round(eval(self.config['TOPOLOGIES']['Channels']))
+
         if num_channels < 1:
             num_channels = 1
         group_distribution = self.config['TOPOLOGIES']['GroupDistribution']
@@ -340,12 +340,17 @@ class Topology:
         json_file.close()
 
         json_channel['current-value'] = self.make_function_header(operands) + '{'
-        json_channel[
-            'current-value'] += 'var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>' + str(
+        # filter
+        filter_prob = round(eval(self.config['TOPOLOGIES']['FilterProb']))
+        if filter_prob < 0: filter_prob = 0
+        elif filter_prob > 1: filter_prob = 1
+        json_channel['current-value'] += 'if(Math.random() < ' + str(filter_prob) + '){return null;}'
+        json_channel['current-value'] += 'var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>' + str(
             ms) + '){break;}} return '
 
         for operand in operands:
-            json_channel['current-value'] += '+' + operand + '.channels.channel0.[\'current-value\']'
+            json_channel['current-value'] += '0+' + operand + '.channels.channel0.[\'current-value\']'
+        json_channel['current-value'] += ';}'
 
         return json_channel
 
