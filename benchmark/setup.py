@@ -260,32 +260,9 @@ class Topology:
     def make_cstream(self, group_subset, stream_subset):
         input_sets, json_channels = self.make_channels(group_subset, stream_subset)
 
-        pre_ms = round(eval(self.config['TOPOLOGIES']['PreFilterMS']))
-        post_ms = round(eval(self.config['TOPOLOGIES']['PostFilterMS']))
-        pre_prob = round(eval(self.config['TOPOLOGIES']['PreFilterProb']))
-        post_prob = round(eval(self.config['TOPOLOGIES']['PostFilterProb']))
-
-        if pre_ms < 0:
-            pre_ms = 0
-        if post_ms < 0:
-            post_ms = 0
-
         json_file = open('./jsons/stream.json')
         json_cstream = json.load(json_file)
         json_file.close()
-
-        presleepfilter = 'true);var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>'
-        postsleepfilter = '){break;}}result = Boolean('
-
-        json_cstream['pre-filter'] = presleepfilter + str(pre_ms) + postsleepfilter
-        if pre_prob < 1:
-            pre_prob = 1
-        json_cstream['pre-filter'] += '{$.lastUpdate} %' + str(pre_prob) + '==(' + str(pre_prob) + ' - 1)'
-
-        json_cstream['post-filter'] = presleepfilter + str(post_ms) + postsleepfilter
-        if post_prob < 1:
-            post_prob = 1
-        json_cstream['post-filter'] += '({$.lastUpdate}+1) %' + str(post_prob) + '==(' + str(post_prob) + ' - 1)'
 
         json_cstream['channels'] = json_channels
 
@@ -362,13 +339,24 @@ class Topology:
         json_channel = json.load(json_file)
         json_file.close()
 
+        json_channel['current-value'] = self.make_function_header(operands) + '{'
         json_channel[
-            'current-value'] = '0);var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>' + str(
-            ms) + '){break;}}result = Number(0'
+            'current-value'] += 'var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>' + str(
+            ms) + '){break;}} return '
+
         for operand in operands:
-            json_channel['current-value'] += '+{$' + operand + '.channels.channel0.current-value}'
+            json_channel['current-value'] += '+' + operand + '.channels.channel0.[\'current-value\']'
 
         return json_channel
+
+    def make_function_header(self, operands):
+        header = "function("
+
+        for operand in operands:
+            header += operand + ','
+
+        return header[:-1] + ')'
+
 
     def request(self, partial_url, method, body):
         time.sleep(0.5)
