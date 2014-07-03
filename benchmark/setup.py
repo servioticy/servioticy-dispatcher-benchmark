@@ -285,7 +285,7 @@ class Topology:
         input_sets = {"groups": group_sets, "streams": stream_sets}
 
         for i in range(num_channels):
-            channels['channel' + str(i)] = self.make_channel(group_sets[i] + stream_sets[i])
+            channels['channel' + str(i)] = self.make_channel(set(group_sets[i] + stream_sets[i]))
 
         return input_sets, channels
 
@@ -346,10 +346,10 @@ class Topology:
         elif filter_prob > 1: filter_prob = 1
         json_channel['current-value'] += 'if(Math.random() < ' + str(filter_prob) + '){return null;}'
         json_channel['current-value'] += 'var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>' + str(
-            ms) + '){break;}} return '
+            ms) + '){break;}} return 0'
 
         for operand in operands:
-            json_channel['current-value'] += '0+' + operand + '.channels.channel0.[\'current-value\']'
+            json_channel['current-value'] += '+' + operand + '.channels.channel0[\'current-value\']'
         json_channel['current-value'] += ';}'
 
         return json_channel
