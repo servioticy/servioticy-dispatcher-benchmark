@@ -285,7 +285,7 @@ class Topology:
         input_sets = {"groups": group_sets, "streams": stream_sets}
 
         for i in range(num_channels):
-            channels['channel' + str(i)] = self.make_channel(set(group_sets[i] + stream_sets[i]))
+            channels['channel' + str(i)] = self.make_channel(group_sets[i] + stream_sets[i])
 
         return input_sets, channels
 
@@ -357,7 +357,7 @@ class Topology:
     def make_function_header(self, operands):
         header = "function("
 
-        for operand in operands:
+        for operand in set(operands):
             header += operand + ','
 
         return header[:-1] + ')'
