@@ -236,8 +236,6 @@ class Topology:
         for i in range(num_cstreams):
             group_set = []
             stream_set = []
-            stream_ids += ['cstream' + str(
-                i)]  # If this is generated in another for i in range(num_cstreams) outside, it would generate cycles.
             ratio = round(len(group_ids) / num_cstreams)
             if ratio < 1:
                 ratio = 1
@@ -252,6 +250,7 @@ class Topology:
                 stream_set = stream_ids
 
             input_sets['cstream' + str(i)], cstreams['cstream' + str(i)] = self.make_cstream(group_set, stream_set)
+            stream_ids += ['cstream' + str(i)]  # If this is generated in another 'for i in range(num_cstreams)' outside, it would generate cycles.
 
         return input_sets, cstreams
 
@@ -326,7 +325,10 @@ class Topology:
                         sel_operand = len(operands) - 1
                     else:
                         sel_operand = round(sel_operand * (len(operands) - 1))
-                    operand_sets[i] += [operands[sel_operand]]
+                    if operands:
+                        operand_sets[i] += [operands[sel_operand]]
+                    else:
+                        operand_sets[i] += []
                     not_found = False
         return operand_sets
 
