@@ -57,8 +57,8 @@ def main():
         print()
         print("Nodes: " + str(len(G.node)))
         print("Edges: " + str(G.number_of_edges()))
-        print("Weak connectivity: " + str(nx.node_connectivity(G.to_undirected())))
-        print("Weak edge-connectivity: " + str(nx.edge_connectivity(G.to_undirected())))
+        print("Connectivity (weak): " + str(nx.node_connectivity(G.to_undirected())))
+        print("Edge-connectivity (weak): " + str(nx.edge_connectivity(G.to_undirected())))
         in_degrees = G.in_degree(G)
         out_degrees = G.out_degree(G)
         for n in G.nodes():
