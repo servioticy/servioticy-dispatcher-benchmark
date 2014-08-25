@@ -39,7 +39,7 @@ var flow = {
 };
 var runOptions = {
     limit: 1,         // concurrent connections
-    iterations: 50,  // number of iterations to perform
+    iterations: 10,  // number of iterations to perform
     prealloc: 100      // only preallocate up to 100 before starting
 };
 var errors = [];

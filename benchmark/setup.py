@@ -19,7 +19,7 @@ class Setup:
 
         self.config.read(config_path)
 
-        random.seed()
+        random.seed(1)
 
         num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
         if num_topologies < 1:
