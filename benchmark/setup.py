@@ -47,10 +47,14 @@ class Topology:
 
         self.config.read(config_path)
 
+        num_initsos = round(eval(self.config['TOPOLOGIES']['InitialSOs']))
+        if num_initsos < 0:
+            num_initsos = 0
+        for i in range(num_initsos):
+            self.put_initial_so()
         num_sos = round(eval(self.config['TOPOLOGIES']['SOs']))
         if num_sos < 0:
             num_sos = 0
-        self.put_initial_so()
         for i in range(num_sos):
             self.put_so()
         return
@@ -293,6 +297,9 @@ class Topology:
         operand_sets = []
         j = 0
         for i in range(num_sets):
+            if len(operands) == 0:
+                operand_sets.append([])
+                continue
             nm = round(eval(num_members))
             if nm > len(operands):
                 nm = len(operands)
