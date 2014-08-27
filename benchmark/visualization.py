@@ -23,8 +23,10 @@ def main():
             for i in range(len(graphs[graph_key].node)):
                 current_label = graphs[graph_key].node[i]['label']
                 if current_label == label:
-                    G = nx.bfs_tree(graphs[graph_key], i)
-                    printed_graphs[graph_key + " - " + label] = G
+                    graph_name = graph_key + " - " + label
+                    printed_graphs[graph_name] = nx.bfs_tree(graphs[graph_key], i)
+                    for node in printed_graphs[graph_name].node:
+                        printed_graphs[graph_name].add_edges_from(nx.bfs_edges(graphs[graph_key], node))
 
     else:
         for graph_key in graphs.keys():
@@ -35,18 +37,16 @@ def main():
         sinks = []
         in_degrees = G.in_degree(G)
         out_degrees = G.out_degree(G)
-        for n in G.nodes():
-            if in_degrees[n] == 0:
+        for n in range(len(G.nodes())):
+            if in_degrees[G.nodes()[n]] == 0:
                 sources.append(n)
-            if out_degrees[n] == 0:
+            if out_degrees[G.nodes()[n]] == 0:
                 sinks.append(n)
         node_colors = ['r'] * len(G.node)
         for i in sinks:
             node_colors[i] = 'g'
         for i in sources:
             node_colors[i] = 'b'
-        for node in G.node:
-            G.add_edges_from(nx.bfs_edges(graphs[graph_key], node))
         p.figure(graph_key)
         nx.draw_spring(G, with_labels=True, node_color=node_colors)
 

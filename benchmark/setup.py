@@ -41,9 +41,12 @@ class Topology:
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
+
         self.so_graph = nx.DiGraph()
         self.stream_graph = nx.DiGraph()
         self.channel_graph = nx.DiGraph()
+
+        self.det_operands_index = 0
 
         self.config.read(config_path)
 
@@ -112,11 +115,11 @@ class Topology:
             json_so['streams']['stream' + str(i)] = json_stream
             initial_stream_ids += ['stream' + str(i)]
 
-        # Groups
-        json_so['groups'] = self.make_groups()
-
         # CStreams
-        input_sets, cstreams = self.make_cstreams(initial_stream_ids, json_so['groups'])
+        groups = {}
+        input_sets, cstreams = self.make_cstreams(initial_stream_ids, groups)
+        # Groups
+        json_so['groups'] = groups
         json_so['streams'] = dict(
             list(json_so['streams'].items()) + list(cstreams.items()))
         response, content = self.request('', 'POST', json.dumps(json_so))
@@ -140,16 +143,14 @@ class Topology:
 
         for k in input_sets.keys():
             self.stream_graph.add_node(so_id + ":" + k)
-            for group_ids in input_sets[k]['groups']:
-                for group_id in group_ids:
-                    for group in json_so['groups'][group_id]:
-                        for soId in json_so['groups'][group_id]["soIds"]:
-                            self.stream_graph.add_edge(soId + ":" + json_so['groups'][group_id]["stream"],
-                                                       so_id + ":" + k)
+            for group_id in input_sets[k]['groups']:
+                for group in json_so['groups'][group_id]:
+                    for soId in json_so['groups'][group_id]["soIds"]:
+                        self.stream_graph.add_edge(soId + ":" + json_so['groups'][group_id]["stream"],
+                                                   so_id + ":" + k)
 
-            for stream_ids in input_sets[k]['streams']:
-                for stream_id in stream_ids:
-                    self.stream_graph.add_edge(so_id + ":" + stream_id, so_id + ":" + k)
+            for stream_id in input_sets[k]['streams']:
+                self.stream_graph.add_edge(so_id + ":" + stream_id, so_id + ":" + k)
 
 
         return
@@ -170,97 +171,28 @@ class Topology:
 
         return json_stream
 
-    def make_groups(self):
-        num_groups = round(eval(self.config['TOPOLOGIES']['MaxGroups']))
-        member_distribution = self.config['TOPOLOGIES']['MemberDistribution']
-        available_streams = self.streams
-        groups = {}
-        if num_groups < 1:
-            num_groups = 1
-        if member_distribution == 'deterministic':
-            return self.make_groups_det()
+    def make_group(self, stream, groups):
+        groups.update({'$'+stream[0]+':'+ stream[1]: {'soIds': [stream[0]], 'stream': stream[1]}})
+        return '$'+stream[0] + ':' + stream[1]
 
-        for i in range(num_groups):
-            not_found = True
-            if len(available_streams) == 0:
-                break
-            while not_found:
-                sel_stream = eval(member_distribution)
-                # if sel_stream < 0 or sel_stream >= len(prev_streams):
-                #     continue
-                if sel_stream < 0:
-                    sel_stream = 0
-                elif sel_stream > 1:
-                    sel_stream = len(available_streams) - 1
-                else:
-                    sel_stream = round(sel_stream * (len(available_streams) - 1))
-                groups['group' + str(i)] = {}
-                groups['group' + str(i)]['soIds'] = [available_streams[sel_stream][0]]
-                groups['group' + str(i)]['stream'] = available_streams[sel_stream][1]
-                available_streams.pop(sel_stream)
-                not_found = False
-        return groups
-
-
-    def make_groups_det(self):
-        num_groups = round(eval(self.config['TOPOLOGIES']['MaxGroups']))
-        available_streams = self.streams
-        groups = {}
-        if num_groups < 1:
-            num_groups = 1
-        for i in range(num_groups):
-            if len(available_streams) == 0:
-                break
-            sel_stream = i % (len(available_streams))
-            groups['group' + str(i)] = {}
-            groups['group' + str(i)]['soIds'] = [available_streams[sel_stream][0]]
-            groups['group' + str(i)]['stream'] = available_streams[sel_stream][1]
-            available_streams.pop(sel_stream)
-
-        return groups
-
-
-    def make_cstreams(self, init_streams, groups):
+    def make_cstreams(self, init_streams, existing_groups):
         num_cstreams = round(eval(self.config['TOPOLOGIES']['CompositeStreams']))
         cstreams = {}
         input_sets = {}
         if num_cstreams < 1:
             num_cstreams = 1
         stream_ids = []
-        group_ids = []
-
         stream_ids += init_streams
 
-        for key in groups.keys():
-            group_ids += [key]
-
-        group_distribution = self.config['TOPOLOGIES']['GroupDistribution']
-        stream_distribution = self.config['TOPOLOGIES']['StreamRefsDistribution']
-
         for i in range(num_cstreams):
-            group_set = []
-            stream_set = []
-            ratio = round(len(group_ids) / num_cstreams)
-            if ratio < 1:
-                ratio = 1
-            if group_distribution == 'deterministic':
-                group_set = group_ids[i * ratio:] + group_ids[:i * ratio]
-            else:
-                group_set = group_ids
-
-            if stream_distribution == 'deterministic':
-                stream_set = stream_ids[i * ratio:] + stream_ids[:i * ratio]
-            else:
-                stream_set = stream_ids
-
-            input_sets['cstream' + str(i)], cstreams['cstream' + str(i)] = self.make_cstream(group_set, stream_set)
-            stream_ids += ['cstream' + str(i)]  # If this is generated in another 'for i in range(num_cstreams)' outside, it would generate cycles.
+            input_sets['cstream' + str(i)], cstreams['cstream' + str(i)] = self.make_cstream(stream_ids, existing_groups)
+            stream_ids += ['cstream' + str(i)]
 
         return input_sets, cstreams
 
 
-    def make_cstream(self, group_subset, stream_subset):
-        input_sets, json_channels = self.make_channels(group_subset, stream_subset)
+    def make_cstream(self, stream_subset, existing_groups):
+        input_sets, json_channels = self.make_channels(stream_subset, existing_groups)
 
         json_file = open('./jsons/stream.json')
         json_cstream = json.load(json_file)
@@ -271,73 +203,85 @@ class Topology:
         return input_sets, json_cstream
 
 
-    def make_channels(self, group_subset, stream_subset):
+    def make_channels(self, stream_subset, existing_groups):
         channels = {}
         num_channels = round(eval(self.config['TOPOLOGIES']['Channels']))
-
         if num_channels < 1:
             num_channels = 1
-        group_distribution = self.config['TOPOLOGIES']['GroupDistribution']
-        group_operands = self.config['TOPOLOGIES']['GroupOperands']
-        stream_distribution = self.config['TOPOLOGIES']['StreamRefsDistribution']
-        stream_operands = self.config['TOPOLOGIES']['StreamOperands']
+        operand_distribution = self.config['TOPOLOGIES']['OperandDistribution']
+        operands = self.config['TOPOLOGIES']['Operands']
 
-        group_sets = self.distribute_operands(group_subset, num_channels, group_operands, group_distribution)
-        stream_sets = self.distribute_operands(stream_subset, num_channels, stream_operands, stream_distribution)
+        group_sets, stream_sets = self.distribute_operands(stream_subset, operands, operand_distribution, existing_groups)
 
         input_sets = {"groups": group_sets, "streams": stream_sets}
 
         for i in range(num_channels):
-            channels['channel' + str(i)] = self.make_channel(group_sets[i] + stream_sets[i])
+            channels['channel' + str(i)] = self.make_channel(group_sets + stream_sets)
 
         return input_sets, channels
 
 
-    def distribute_operands_det(self, operands, num_sets, num_members):
+    def distribute_operands_det(self, new_streams, num_operands, existing_groups):
         operand_sets = []
-        j = 0
-        for i in range(num_sets):
-            if len(operands) == 0:
-                operand_sets.append([])
-                continue
-            nm = round(eval(num_members))
-            if nm > len(operands):
-                nm = len(operands)
-            elif nm < 1:
-                nm = 1
-            operand_sets.append((operands + operands)[j:j + nm])
-            j = (j + nm) % len(operands)
-        return operand_sets
+        new_groups = []
+        groups = list(self.streams)
+        streams = list(new_streams)
+        nm = round(eval(num_operands))
+        if nm > len(new_streams + self.streams):
+            nm = len(new_streams + self.streams)
+        elif nm < 1:
+            nm = 1
+        for j in range(nm):
+            if len(streams + groups) == 0:
+                break
+            sel_operand = self.det_operands_index = self.det_operands_index + j % len(new_streams + self.streams)
+            if sel_operand < len(self.streams):
+                groupid = self.make_group(groups.pop(sel_operand), existing_groups)
+                new_groups += [groupid]
+            else:
+                sel_operand = sel_operand - len(self.streams)
+                operand_sets += [new_streams.pop(sel_operand)]
+        self.det_operands_index = self.det_operands_index + 1 % len(new_streams + self.streams)
+        return new_groups, operand_sets
 
 
-    def distribute_operands(self, operands, num_sets, num_members, distribution):
+    def distribute_operands(self, new_streams, num_operands, distribution, existing_groups):
+        # The operands can be repeated
         if distribution == 'deterministic':
-            return self.distribute_operands_det(operands, num_sets, num_members)
+            return self.distribute_operands_det(new_streams, num_operands, existing_groups)
         operand_sets = []
-        for i in range(num_sets):
-            operand_sets.append([])
-            nm = round(eval(num_members))
+        new_groups = []
 
-            if nm < 1:
-                nm = 1
-            for j in range(nm):
-                not_found = True
-                while not_found:
-                    sel_operand = round(eval(distribution))
-                    # if sel_operand < 0 or sel_operand >= len(operands):
-                    #     continue
-                    if sel_operand < 0:
-                        sel_operand = 0
-                    elif sel_operand > 1:
-                        sel_operand = len(operands) - 1
-                    else:
-                        sel_operand = round(sel_operand * (len(operands) - 1))
-                    if operands:
-                        operand_sets[i] += [operands[sel_operand]]
-                    else:
-                        operand_sets[i] += []
-                    not_found = False
-        return operand_sets
+        nm = round(eval(num_operands))
+        groups = list(self.streams)
+        streams = list(new_streams)
+        if nm < 1:
+            nm = 1
+        for j in range(nm):
+            not_found = True
+            while not_found:
+                if len(streams + groups) == 0:
+                    break
+                sel_operand = round(eval(distribution))
+                # if sel_operand < 0 or sel_operand >= len(operands):
+                #     continue
+                if sel_operand < 0:
+                    sel_operand = 0
+                elif sel_operand > 1:
+                    sel_operand = 1
+
+                sel_operand = round(sel_operand * (len(streams + groups) - 1))
+
+                if sel_operand < 0:
+                    operand_sets += []
+                elif sel_operand < len(groups):
+                    groupid = self.make_group(groups.pop(sel_operand), existing_groups)
+                    new_groups += [groupid]
+                else:
+                    sel_operand = sel_operand - len(self.streams)
+                    operand_sets += [streams.pop(sel_operand)]
+                not_found = False
+        return new_groups, operand_sets
 
 
     def make_channel(self, operands):
@@ -396,7 +340,6 @@ def main():
                      setup.config['TOPOLOGIES']['GraphsDir'] + 'so_graph_' + str(i) + '.gml')
         nx.write_gml(setup.topologies[i].stream_graph,
                      setup.config['TOPOLOGIES']['GraphsDir'] + 'stream_graph_' + str(i) + '.gml')
-    p.show()
     return
 
 
