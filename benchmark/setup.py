@@ -234,14 +234,14 @@ class Topology:
         for j in range(nm):
             if len(streams + groups) == 0:
                 break
-            sel_operand = self.det_operands_index = self.det_operands_index + j % len(new_streams + self.streams)
-            if sel_operand < len(self.streams):
+            sel_operand = self.det_operands_index = self.det_operands_index + j % len(streams + groups)
+            if sel_operand < len(groups):
                 groupid = self.make_group(groups.pop(sel_operand), existing_groups)
                 new_groups += [groupid]
             else:
-                sel_operand = sel_operand - len(self.streams)
-                operand_sets += [new_streams.pop(sel_operand)]
-        self.det_operands_index = self.det_operands_index + 1 % len(new_streams + self.streams)
+                sel_operand = sel_operand - len(groups)
+                operand_sets += [streams.pop(sel_operand)]
+        self.det_operands_index = self.det_operands_index + 1 % len(streams + groups)
         return new_groups, operand_sets
 
 
@@ -258,29 +258,26 @@ class Topology:
         if nm < 1:
             nm = 1
         for j in range(nm):
-            not_found = True
-            while not_found:
-                if len(streams + groups) == 0:
-                    break
-                sel_operand = round(eval(distribution))
-                # if sel_operand < 0 or sel_operand >= len(operands):
-                #     continue
-                if sel_operand < 0:
-                    sel_operand = 0
-                elif sel_operand > 1:
-                    sel_operand = 1
+            if len(streams + groups) == 0:
+                break
+            sel_operand = round(eval(distribution))
+            # if sel_operand < 0 or sel_operand >= len(operands):
+            #     continue
+            if sel_operand < 0:
+                sel_operand = 0
+            elif sel_operand > 1:
+                sel_operand = 1
 
-                sel_operand = round(sel_operand * (len(streams + groups) - 1))
+            sel_operand = round(sel_operand * (len(streams + groups) - 1))
 
-                if sel_operand < 0:
-                    operand_sets += []
-                elif sel_operand < len(groups):
-                    groupid = self.make_group(groups.pop(sel_operand), existing_groups)
-                    new_groups += [groupid]
-                else:
-                    sel_operand = sel_operand - len(self.streams)
-                    operand_sets += [streams.pop(sel_operand)]
-                not_found = False
+            if sel_operand < 0:
+                continue
+            elif sel_operand < len(groups):
+                groupid = self.make_group(groups.pop(sel_operand), existing_groups)
+                new_groups += [groupid]
+            else:
+                sel_operand = sel_operand - len(groups)
+                operand_sets += [streams.pop(sel_operand)]
         return new_groups, operand_sets
 
 
