@@ -82,9 +82,8 @@ def main():
             print("Vertex per path max: " + str(simple_paths_len[-1]))
             print("Vertex per path mean: " + str(numpy.mean(simple_paths_len, axis=0)))
             print("Vertex per path standard deviation: " + str(numpy.std(simple_paths_len, axis=0)))
-            print("Degree in-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="in", y="in")))
-            print("Degree out-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="out", y="out")))
-
+        print("Degree in-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="in", y="in")))
+        print("Degree out-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="out", y="out")))
         print()
     p.show()
     return
