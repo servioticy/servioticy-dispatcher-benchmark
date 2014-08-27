@@ -63,6 +63,7 @@ def main():
         print("Edge-connectivity (weak): " + str(nx.edge_connectivity(G.to_undirected())))
         print("Sources: " + str(len(sources)))
         print("Sinks: " + str(len(sinks)))
+        print("Density (DAG): " + str(nx.density(G.to_undirected())))
         out_degrees = []
         for node in G.nodes():
             out_degrees.append(G.out_degree(node))
@@ -83,7 +84,6 @@ def main():
         # for i in range(len(simple_paths)):
         #     simple_paths_len.append(len(simple_paths[i]))
         # simple_paths_len = sorted(simple_paths_len)
-        # print("Density (DAG): " + str(nx.density(G.to_undirected())))
         # if len(simple_paths_len) > 0:
         #     print("Vertex per path min: " + str(simple_paths_len[0]))
         #     print("Vertex per path max: " + str(simple_paths_len[-1]))

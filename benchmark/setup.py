@@ -6,8 +6,7 @@ import configparser
 import json
 import random
 import networkx as nx
-import pylab as p
-
+import uuid
 import httplib2
 
 
@@ -78,12 +77,13 @@ class Topology:
             json_so['streams']['stream' + str(i)] = json_stream
             streams += ['stream' + str(i)]
 
-        response, content = self.request('', 'POST', json.dumps(json_so))
-        if int(response['status']) >= 300:
-            print(content + '\n')
-            return []
-        json_content = json.loads(content)
-        so_id = json_content['id']
+        # response, content = self.request('', 'POST', json.dumps(json_so))
+        # if int(response['status']) >= 300:
+        #     print(content + '\n')
+        #     return []
+        # json_content = json.loads(content)
+        # so_id = json_content['id']
+        so_id = str(uuid.uuid4())
 
         self.so_graph.add_node(so_id)
 
@@ -111,7 +111,6 @@ class Topology:
         # Streams
         for i in range(num_streams):
             json_stream = self.make_stream()
-
             json_so['streams']['stream' + str(i)] = json_stream
             initial_stream_ids += ['stream' + str(i)]
 
@@ -122,12 +121,13 @@ class Topology:
         json_so['groups'] = groups
         json_so['streams'] = dict(
             list(json_so['streams'].items()) + list(cstreams.items()))
-        response, content = self.request('', 'POST', json.dumps(json_so))
-        if int(response['status']) >= 300:
-            print(content + '\n')
-            return [], []
-        json_content = json.loads(content)
-        so_id = json_content['id']
+        # response, content = self.request('', 'POST', json.dumps(json_so))
+        # if int(response['status']) >= 300:
+        #     print(content + '\n')
+        #     return [], []
+        # json_content = json.loads(content)
+        # so_id = json_content['id']
+        so_id = str(uuid.uuid4())
 
         self.so_graph.add_node(so_id)
         for initial_stream_id in initial_stream_ids:
