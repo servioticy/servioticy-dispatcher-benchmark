@@ -67,7 +67,6 @@ def main():
         for node in G.nodes():
             out_degrees.append(G.out_degree(node))
             out_degrees = sorted(out_degrees)
-        print("Out degrees min: " + str(out_degrees[0]))
         print("Out degrees max: " + str(out_degrees[-1]))
         print("Out degrees mean: " + str(numpy.mean(out_degrees, axis=0)))
         print("Out degrees standard deviation: " + str(numpy.std(out_degrees, axis=0)))
