@@ -9,7 +9,6 @@ import networkx as nx
 import uuid
 import httplib2
 
-
 class Setup:
     def __init__(self, config_path):
         self.topologies = []
@@ -36,10 +35,12 @@ class Setup:
         return
 
 class Topology:
-    def __init__(self, config_path):
+    def __init__(self, config_path, sos=None, operands=None):
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
+
+        self.noperands = operands
 
         self.so_graph = nx.DiGraph()
         self.stream_graph = nx.DiGraph()
@@ -54,7 +55,7 @@ class Topology:
             num_initsos = 0
         for i in range(num_initsos):
             self.put_initial_so()
-        num_sos = round(eval(self.config['TOPOLOGIES']['SOs']))
+        num_sos = round(eval(self.config['TOPOLOGIES']['SOs'] if sos == None else sos))
         if num_sos < 0:
             num_sos = 0
         for i in range(num_sos):
@@ -144,10 +145,9 @@ class Topology:
         for k in input_sets.keys():
             self.stream_graph.add_node(so_id + ":" + k)
             for group_id in input_sets[k]['groups']:
-                for group in json_so['groups'][group_id]:
-                    for soId in json_so['groups'][group_id]["soIds"]:
-                        self.stream_graph.add_edge(soId + ":" + json_so['groups'][group_id]["stream"],
-                                                   so_id + ":" + k)
+                for soId in json_so['groups'][group_id]["soIds"]:
+                    self.stream_graph.add_edge(soId + ":" + json_so['groups'][group_id]["stream"],
+                                               so_id + ":" + k)
 
             for stream_id in input_sets[k]['streams']:
                 self.stream_graph.add_edge(so_id + ":" + stream_id, so_id + ":" + k)
@@ -209,7 +209,9 @@ class Topology:
         if num_channels < 1:
             num_channels = 1
         operand_distribution = self.config['TOPOLOGIES']['OperandDistribution']
-        operands = self.config['TOPOLOGIES']['Operands']
+        operands = round(eval(self.config['TOPOLOGIES']['Operands'] if self.noperands == None else self.noperands))
+        if operands < 1:
+            operands = 1
 
         group_sets, stream_sets = self.distribute_operands(stream_subset, operands, operand_distribution, existing_groups)
 
@@ -226,11 +228,9 @@ class Topology:
         new_groups = []
         groups = list(self.streams)
         streams = list(new_streams)
-        nm = round(eval(num_operands))
+        nm = num_operands
         if nm > len(new_streams + self.streams):
             nm = len(new_streams + self.streams)
-        elif nm < 1:
-            nm = 1
         for j in range(nm):
             if len(streams + groups) == 0:
                 break
@@ -244,7 +244,6 @@ class Topology:
         self.det_operands_index = self.det_operands_index + 1 % len(streams + groups)
         return new_groups, operand_sets
 
-
     def distribute_operands(self, new_streams, num_operands, distribution, existing_groups):
         # The operands can be repeated
         if distribution == 'deterministic':
@@ -252,11 +251,9 @@ class Topology:
         operand_sets = []
         new_groups = []
 
-        nm = round(eval(num_operands))
+        nm = num_operands
         groups = list(self.streams)
         streams = list(new_streams)
-        if nm < 1:
-            nm = 1
         for j in range(nm):
             if len(streams + groups) == 0:
                 break
@@ -267,9 +264,7 @@ class Topology:
                 sel_operand = 0
             elif sel_operand > 1:
                 sel_operand = 1
-
             sel_operand = round(sel_operand * (len(streams + groups) - 1))
-
             if sel_operand < 0:
                 continue
             elif sel_operand < len(groups):

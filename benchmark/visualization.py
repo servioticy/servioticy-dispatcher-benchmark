@@ -71,24 +71,24 @@ def main():
         print("Out degrees max: " + str(out_degrees[-1]))
         print("Out degrees mean: " + str(numpy.mean(out_degrees, axis=0)))
         print("Out degrees standard deviation: " + str(numpy.std(out_degrees, axis=0)))
-        # for id in in_degrees:
-        #     if in_degrees[id] != 0:
-        #         continue
-        #     for od in out_degrees:
-        #         if out_degrees[od] != 0:
-        #             continue
-        #         if nx.has_path(G, source=id, target=od):
-        #             simple_paths.extend(nx.all_simple_paths(G, source=id, target=od))
-        # print("Paths (from a source to a sink): " + str(len(simple_paths)))
-        # simple_paths_len = []
-        # for i in range(len(simple_paths)):
-        #     simple_paths_len.append(len(simple_paths[i]))
-        # simple_paths_len = sorted(simple_paths_len)
-        # if len(simple_paths_len) > 0:
-        #     print("Vertex per path min: " + str(simple_paths_len[0]))
-        #     print("Vertex per path max: " + str(simple_paths_len[-1]))
-        #     print("Vertex per path mean: " + str(numpy.mean(simple_paths_len, axis=0)))
-        #     print("Vertex per path standard deviation: " + str(numpy.std(simple_paths_len, axis=0)))
+        for id in in_degrees:
+            if in_degrees[id] != 0:
+                continue
+            for od in out_degrees:
+                if out_degrees[od] != 0:
+                    continue
+                if nx.has_path(G, source=id, target=od):
+                    simple_paths.extend(nx.all_simple_paths(G, source=id, target=od))
+        print("Paths (from a source to a sink): " + str(len(simple_paths)))
+        simple_paths_len = []
+        for i in range(len(simple_paths)):
+            simple_paths_len.append(len(simple_paths[i]))
+        simple_paths_len = sorted(simple_paths_len)
+        if len(simple_paths_len) > 0:
+            print("Vertex per path min: " + str(simple_paths_len[0]))
+            print("Vertex per path max: " + str(simple_paths_len[-1]))
+            print("Vertex per path mean: " + str(numpy.mean(simple_paths_len, axis=0)))
+            print("Vertex per path standard deviation: " + str(numpy.std(simple_paths_len, axis=0)))
         print("Degree in-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="in", y="in")))
         print("Degree out-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="out", y="out")))
         print()
