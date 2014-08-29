@@ -6,7 +6,62 @@ import numpy
 import networkx as nx
 import pylab as p
 
+def all_simple_paths(G, sources, targets, cutoff=None):
+
+    if not isinstance(sources, list):
+        sources = [sources]
+    if not isinstance(targets, list):
+        targets = [targets]
+
+    for source in sources:
+        if source not in G:
+            raise nx.NetworkXError('source node %s not in graph'%sources)
+
+    for target in targets:
+        if target not in G:
+            raise nx.NetworkXError('target node %s not in graph'%targets)
+
+    if cutoff is None:
+        cutoff = len(G)-1
+    by_input = {}
+    result = []
+    for source in sources:
+        _targets = list(targets)
+        by_input[source] = nx.dfs_tree(G, source)
+        for node in G.node:
+            by_input[source].add_edges_from(nx.dfs_edges(G, node))
+        _targets[:] = [target for target in _targets if target in by_input[source].nodes()]
+        result.extend(_all_simple_paths_graph(by_input[source], source=source, targets=_targets, cutoff=cutoff))
+    return result
+
+def _all_simple_paths_graph(G, source, targets, cutoff=None):
+        if cutoff < 1:
+            return
+        visited = [source]
+        stack = [iter(G[source])]
+        while stack and targets:
+            children = stack[-1]
+            child = next(children, None)
+            if child is None:
+                stack.pop()
+                visited.pop()
+            elif len(visited) < cutoff:
+                if child in targets:
+                    yield visited + [child]
+                elif child not in visited:
+                    visited.append(child)
+                    stack.append(iter(G[child]))
+            else: #len(visited) == cutoff:
+                if child in targets:
+                        yield visited + [child]
+                for target in targets:
+                    if target in children:
+                        yield visited + [target]
+                stack.pop()
+                visited.pop()
+
 def main():
+    by_input = {}
     graphs = {}
     printed_graphs = {}
     if os.path.isdir(sys.argv[1]):
@@ -24,10 +79,11 @@ def main():
                 current_label = graphs[graph_key].node[i]['label']
                 if current_label == label:
                     graph_name = graph_key + " - " + label
+                    by_input[graph_name] = {}
                     printed_graphs[graph_name] = nx.bfs_tree(graphs[graph_key], i)
                     for node in printed_graphs[graph_name].node:
-                        printed_graphs[graph_name].add_edges_from(nx.bfs_edges(graphs[graph_key], node))
-
+                        printed_graphs[graph_name].add_edges_from(nx.dfs_edges(graphs[graph_key], node))
+                    by_input[i] = printed_graphs[graph_name]
     else:
         for graph_key in graphs.keys():
             printed_graphs[graph_key] = graphs[graph_key]
@@ -71,14 +127,8 @@ def main():
         print("Out degrees max: " + str(out_degrees[-1]))
         print("Out degrees mean: " + str(numpy.mean(out_degrees, axis=0)))
         print("Out degrees standard deviation: " + str(numpy.std(out_degrees, axis=0)))
-        for id in in_degrees:
-            if in_degrees[id] != 0:
-                continue
-            for od in out_degrees:
-                if out_degrees[od] != 0:
-                    continue
-                if nx.has_path(G, source=id, target=od):
-                    simple_paths.extend(nx.all_simple_paths(G, source=id, target=od))
+        simple_paths.extend(all_simple_paths(G, sources=sources, targets=sinks))
+
         print("Paths (from a source to a sink): " + str(len(simple_paths)))
         simple_paths_len = []
         for i in range(len(simple_paths)):
