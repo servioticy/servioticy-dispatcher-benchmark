@@ -2,63 +2,87 @@ __author__ = 'alvaro'
 
 import sys
 import os
+import threading
+import queue
+import multiprocessing
+
 import numpy
 import networkx as nx
 import pylab as p
 
-def all_simple_paths(G, sources, targets, cutoff=None):
+
+def all_simple_paths_len(G, sources):
 
     if not isinstance(sources, list):
         sources = [sources]
-    if not isinstance(targets, list):
-        targets = [targets]
 
     for source in sources:
         if source not in G:
             raise nx.NetworkXError('source node %s not in graph'%sources)
-
-    for target in targets:
-        if target not in G:
-            raise nx.NetworkXError('target node %s not in graph'%targets)
-
-    if cutoff is None:
-        cutoff = len(G)-1
-    by_input = {}
     result = []
+    workers = []
+    q = queue.Queue()
     for source in sources:
-        _targets = list(targets)
-        by_input[source] = nx.dfs_tree(G, source)
-        for node in G.node:
-            by_input[source].add_edges_from(nx.dfs_edges(G, node))
-        _targets[:] = [target for target in _targets if target in by_input[source].nodes()]
-        result.extend(_all_simple_paths_graph(by_input[source], source=source, targets=_targets, cutoff=cutoff))
+        workers.append(threading.Thread(target=_all_simple_paths_graph_worker_len, args=(q, result, G, source)))
+        workers[-1].daemon = True
+        workers[-1].start()
+    for worker in workers:
+        q.get()
     return result
 
-def _all_simple_paths_graph(G, source, targets, cutoff=None):
-        if cutoff < 1:
-            return
-        visited = [source]
+
+def _all_simple_paths_graph_worker_len(q, result, G, source):
+    for path in _all_simple_paths_graph(G, source=source):
+        result.append(path)
+    q.put(('done'))
+    return result
+
+
+def _all_simple_paths_graph_worker(G, source, visited, q, used_workers):
+    q.put(_all_simple_paths_graph(G, source, visited, used_workers))
+
+
+def _all_simple_paths_graph(G, source, visited=1, used_workers=queue.Queue()):
+    used_workers.put(1)
+    workers = []
+    worker_results = queue.Queue()
+    result = sorted([])
         stack = [iter(G[source])]
-        while stack and targets:
+    while stack:
             children = stack[-1]
             child = next(children, None)
-            if child is None:
-                stack.pop()
-                visited.pop()
-            elif len(visited) < cutoff:
-                if child in targets:
-                    yield visited + [child]
-                elif child not in visited:
-                    visited.append(child)
+            if child is not None:
+                if len(G[child]) == 0:
+                    visited += 1
+                    result.append(visited)
+                else:
+                    visited += 1
+                cores = multiprocessing.cpu_count()
+                if cores > used_workers.qsize():
+                    workers.append(threading.Thread(target=_all_simple_paths_graph_worker,
+                                                    args=(G, child, visited, worker_results, used_workers)))
+                    workers[-1].daemon = True
+                    workers[-1].start()
+                    visited -= 1
+                else:
                     stack.append(iter(G[child]))
-            else: #len(visited) == cutoff:
-                if child in targets:
-                        yield visited + [child]
-                for target in targets:
-                    if target in children:
-                        yield visited + [target]
+            else:
                 stack.pop()
-                visited.pop()
+                visited -= 1
+    used_workers.get()
+    for worker in workers:
+        result.extend(worker_results.get())
+    return sorted(result)
+
+
+# def dag_paths_lens(G, source, partlen=0):
+# path_lens = sorted([])
+#     partlen += 1
+#     for node in G[source]:
+#         path_lens.extend(dag_paths_lens(G, node, partlen))
+#     if len(G[source]) == 0:
+#         path_lens.append(partlen)
+#     return path_lens
 
 def main():
     by_input = {}
@@ -120,6 +144,13 @@ def main():
         print("Sources: " + str(len(sources)))
         print("Sinks: " + str(len(sinks)))
         print("Density (DAG): " + str(nx.density(G.to_undirected())))
+        in_degrees = []
+        for node in G.nodes():
+            in_degrees.append(G.in_degree(node))
+            in_degrees = sorted(in_degrees)
+        print("In degrees max: " + str(in_degrees[-1]))
+        print("In degrees mean: " + str(numpy.mean(in_degrees, axis=0)))
+        print("In degrees standard deviation: " + str(numpy.std(in_degrees, axis=0)))
         out_degrees = []
         for node in G.nodes():
             out_degrees.append(G.out_degree(node))
@@ -127,18 +158,19 @@ def main():
         print("Out degrees max: " + str(out_degrees[-1]))
         print("Out degrees mean: " + str(numpy.mean(out_degrees, axis=0)))
         print("Out degrees standard deviation: " + str(numpy.std(out_degrees, axis=0)))
-        simple_paths.extend(all_simple_paths(G, sources=sources, targets=sinks))
+        print("It is a DAG: " + str(nx.is_directed_acyclic_graph(G)))
+        # simple_paths = dag_paths_lens(G, sources[0])
+        simple_paths.extend(all_simple_paths_len(G, sources=sources))
 
         print("Paths (from a source to a sink): " + str(len(simple_paths)))
-        simple_paths_len = []
-        for i in range(len(simple_paths)):
-            simple_paths_len.append(len(simple_paths[i]))
-        simple_paths_len = sorted(simple_paths_len)
-        if len(simple_paths_len) > 0:
-            print("Vertex per path min: " + str(simple_paths_len[0]))
-            print("Vertex per path max: " + str(simple_paths_len[-1]))
-            print("Vertex per path mean: " + str(numpy.mean(simple_paths_len, axis=0)))
-            print("Vertex per path standard deviation: " + str(numpy.std(simple_paths_len, axis=0)))
+        # simple_paths_len = []
+        # for i in range(len(simple_paths)):
+        # simple_paths_len.append(len(simple_paths[i]))
+        if len(simple_paths) > 0:
+            print("Vertex per path min: " + str(simple_paths[0]))
+            print("Vertex per path max: " + str(simple_paths[-1]))
+            print("Vertex per path mean: " + str(numpy.mean(simple_paths, axis=0)))
+            print("Vertex per path standard deviation: " + str(numpy.std(simple_paths, axis=0)))
         print("Degree in-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="in", y="in")))
         print("Degree out-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="out", y="out")))
         print()
