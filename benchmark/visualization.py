@@ -1,5 +1,3 @@
-__author__ = 'alvaro'
-
 import sys
 import os
 import threading
@@ -20,34 +18,22 @@ def all_simple_paths_len(G, sources):
         if source not in G:
             raise nx.NetworkXError('source node %s not in graph'%sources)
     result = []
-    workers = []
     q = queue.Queue()
     for source in sources:
-        workers.append(threading.Thread(target=_all_simple_paths_graph_worker_len, args=(q, result, G, source)))
-        workers[-1].daemon = True
-        workers[-1].start()
-    for worker in workers:
-        q.get()
+        result.extend(_all_simple_paths_graph_len(G, source))
+
     return result
-
-
-def _all_simple_paths_graph_worker_len(q, result, G, source):
-    for path in _all_simple_paths_graph(G, source=source):
-        result.append(path)
-    q.put(('done'))
-    return result
-
 
 def _all_simple_paths_graph_worker(G, source, visited, q, used_workers):
-    q.put(_all_simple_paths_graph(G, source, visited, used_workers))
+    q.put(_all_simple_paths_graph_len(G, source, visited, used_workers))
 
 
-def _all_simple_paths_graph(G, source, visited=1, used_workers=queue.Queue()):
+def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()):
     used_workers.put(1)
     workers = []
     worker_results = queue.Queue()
     result = sorted([])
-        stack = [iter(G[source])]
+    stack = [iter(G[source])]
     while stack:
             children = stack[-1]
             child = next(children, None)
@@ -84,20 +70,20 @@ def _all_simple_paths_graph(G, source, visited=1, used_workers=queue.Queue()):
 #         path_lens.append(partlen)
 #     return path_lens
 
-def main():
+def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=True):
     by_input = {}
     graphs = {}
     printed_graphs = {}
-    if os.path.isdir(sys.argv[1]):
-        for file in os.listdir(sys.argv[1]):
-            graphs[file] = nx.read_gml(sys.argv[1] + '/' + file)
-    elif os.path.isfile(sys.argv[1]):
-        graphs[sys.argv[1]] = nx.read_gml(sys.argv[1])
+    if os.path.isdir(graphs_dir):
+        for file in os.listdir(graphs_dir):
+            graphs[file] = nx.read_gml(graphs_dir + '/' + file)
+    elif os.path.isfile(graphs_dir):
+        graphs[graphs_dir] = nx.read_gml(graphs_dir)
 
-    if len(sys.argv) > 2:
-        label = sys.argv[2]
-        if len(sys.argv) > 3:
-            label += ":" + sys.argv[3]
+    if initso != None:
+        label = initso
+        if initstream != None:
+            label += ":" + initstream
         for graph_key in graphs.keys():
             for i in range(len(graphs[graph_key].node)):
                 current_label = graphs[graph_key].node[i]['label']
@@ -122,61 +108,98 @@ def main():
                 sources.append(n)
             if out_degrees[G.nodes()[n]] == 0:
                 sinks.append(n)
-        node_colors = ['r'] * len(G.node)
-        for i in sinks:
-            node_colors[i] = 'g'
-        for i in sources:
-            node_colors[i] = 'b'
-        p.figure(graph_key)
-        nx.draw_spring(G, with_labels=True, node_color=node_colors)
+        if show:
+            node_colors = ['r'] * len(G.node)
+            for i in sinks:
+                node_colors[i] = 'g'
+            for i in sources:
+                node_colors[i] = 'b'
+            p.figure(graph_key)
+            nx.draw_spring(G, with_labels=True, node_color=node_colors)
 
-        simple_paths = []
-        for i in range(len(graph_key)+4):
-            print('*', end="")
-        print('\n* '+graph_key+' *')
-        for i in range(len(graph_key)+4):
-            print('*', end="")
-        print()
-        print("Nodes: " + str(len(G.node)))
-        print("Edges: " + str(G.number_of_edges()))
-        print("Connectivity (weak): " + str(nx.node_connectivity(G.to_undirected())))
-        print("Edge-connectivity (weak): " + str(nx.edge_connectivity(G.to_undirected())))
-        print("Sources: " + str(len(sources)))
-        print("Sinks: " + str(len(sinks)))
-        print("Density (DAG): " + str(nx.density(G.to_undirected())))
         in_degrees = []
         for node in G.nodes():
             in_degrees.append(G.in_degree(node))
             in_degrees = sorted(in_degrees)
-        print("In degrees max: " + str(in_degrees[-1]))
-        print("In degrees mean: " + str(numpy.mean(in_degrees, axis=0)))
-        print("In degrees standard deviation: " + str(numpy.std(in_degrees, axis=0)))
+
         out_degrees = []
         for node in G.nodes():
             out_degrees.append(G.out_degree(node))
             out_degrees = sorted(out_degrees)
-        print("Out degrees max: " + str(out_degrees[-1]))
-        print("Out degrees mean: " + str(numpy.mean(out_degrees, axis=0)))
-        print("Out degrees standard deviation: " + str(numpy.std(out_degrees, axis=0)))
-        print("It is a DAG: " + str(nx.is_directed_acyclic_graph(G)))
-        # simple_paths = dag_paths_lens(G, sources[0])
+
+        simple_paths = []
         simple_paths.extend(all_simple_paths_len(G, sources=sources))
 
-        print("Paths (from a source to a sink): " + str(len(simple_paths)))
-        # simple_paths_len = []
-        # for i in range(len(simple_paths)):
-        # simple_paths_len.append(len(simple_paths[i]))
-        if len(simple_paths) > 0:
-            print("Vertex per path min: " + str(simple_paths[0]))
-            print("Vertex per path max: " + str(simple_paths[-1]))
-            print("Vertex per path mean: " + str(numpy.mean(simple_paths, axis=0)))
-            print("Vertex per path standard deviation: " + str(numpy.std(simple_paths, axis=0)))
-        print("Degree in-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="in", y="in")))
-        print("Degree out-assortativity coefficient: " + str(nx.degree_assortativity_coefficient(G, x="out", y="out")))
-        print()
-    p.show()
+        graph_info = [
+            str(len(G.node)),
+            str(nx.density(G.to_undirected())),
+            str(G.number_of_edges()),
+            str(nx.node_connectivity(G.to_undirected())),
+            str(nx.edge_connectivity(G.to_undirected())),
+            str(len(sources)),
+            str(len(sinks)),
+            str(in_degrees[-1]),
+            str(numpy.mean(in_degrees, axis=0)),
+            str(numpy.std(in_degrees, axis=0)),
+            str(out_degrees[-1]),
+            str(numpy.mean(out_degrees, axis=0)),
+            str(numpy.std(out_degrees, axis=0)),
+            str(nx.is_directed_acyclic_graph(G)),
+            str(len(simple_paths)),
+            str(simple_paths[0] if len(simple_paths) > 0 else 0),
+            str(simple_paths[-1] if len(simple_paths) > 0 else 0),
+            str(numpy.mean(simple_paths) if len(simple_paths) > 0 else 0),
+            str(numpy.std(simple_paths) if len(simple_paths) > 0 else 0),
+            str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
+            str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
+        ]
+        if csvfile == None:
+            for i in range(len(graph_key) + 4):
+                print('*', end="")
+            print('\n* ' + graph_key + ' *')
+            for i in range(len(graph_key) + 4):
+                print('*', end="")
+            print()
+            info_pos = iter(graph_info)
+            print("Nodes: " + next(info_pos))
+            print("Edges: " + next(info_pos))
+            print("Connectivity (weak): " + next(info_pos))
+            print("Edge-connectivity (weak): " + next(info_pos))
+            print("Sources: " + next(info_pos))
+            print("Sinks: " + next(info_pos))
+            print("Density (DAG): " + next(info_pos))
+            print("In degrees max: " + next(info_pos))
+            print("In degrees mean: " + next(info_pos))
+            print("In degrees standard deviation: " + next(info_pos))
+            print("Out degrees max: " + next(info_pos))
+            print("Out degrees mean: " + next(info_pos))
+            print("Out degrees standard deviation: " + next(info_pos))
+            print("It is a DAG: " + next(info_pos))
+            print("Paths (from a source to a sink): " + next(info_pos))
+            # simple_paths_len = []
+            # for i in range(len(simple_paths)):
+            # simple_paths_len.append(len(simple_paths[i]))
+            if len(simple_paths) > 0:
+                print("Vertex per path min: " + next(info_pos))
+                print("Vertex per path max: " + next(info_pos))
+                print("Vertex per path mean: " + next(info_pos))
+                print("Vertex per path standard deviation: " + next(info_pos))
+            print("Degree in-assortativity coefficient: " + next(info_pos))
+            print("Degree out-assortativity coefficient: " + next(info_pos))
+            print()
+    if show:
+        p.show()
     return
 
+
+def main():
+    if len(sys.argv) == 2:
+        show(graphs_dir=sys.argv[1])
+    elif len(sys.argv) == 3:
+        show(graphs_dir=sys.argv[1], initso=sys.argv[2])
+    elif len(sys.argv) == 4:
+        show(graphs_dir=sys.argv[1], initso=sys.argv[2], initstream=sys.argv[3])
+    return
 
 if __name__ == '__main__':
     main()

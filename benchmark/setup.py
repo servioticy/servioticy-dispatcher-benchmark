@@ -1,16 +1,15 @@
 import time
-
-__author__ = 'alvaro'
-
 import configparser
 import json
 import random
-import networkx as nx
 import uuid
+
+import networkx as nx
 import httplib2
 
+
 class Setup:
-    def __init__(self, config_path):
+    def __init__(self, config_path, sos=None, operands=None):
         self.topologies = []
         self.config = configparser.ConfigParser()
         self.initial_streams = []
@@ -23,7 +22,7 @@ class Setup:
         if num_topologies < 1:
             num_topologies = 1
         for i in range(num_topologies):
-            self.topologies.append(Topology(config_path))
+            self.topologies.append(Topology(config_path, sos, operands))
             self.initial_streams += self.topologies[-1].initial_streams
         return
 
