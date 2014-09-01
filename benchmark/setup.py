@@ -9,7 +9,7 @@ import httplib2
 
 
 class Setup:
-    def __init__(self, config_path, sos=None, operands=None):
+    def __init__(self, config_path, deploy=True,sos=None, operands=None):
         self.topologies = []
         self.config = configparser.ConfigParser()
         self.initial_streams = []
@@ -22,7 +22,7 @@ class Setup:
         if num_topologies < 1:
             num_topologies = 1
         for i in range(num_topologies):
-            self.topologies.append(Topology(config_path, sos, operands))
+            self.topologies.append(Topology(config_path, deploy, sos, operands))
             self.initial_streams += self.topologies[-1].initial_streams
         return
 
@@ -34,12 +34,14 @@ class Setup:
         return
 
 class Topology:
-    def __init__(self, config_path, sos=None, operands=None):
+    def __init__(self, config_path, deploy=True, sos=None, operands=None):
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
 
         self.noperands = operands
+
+        self.deploy = deploy;
 
         self.so_graph = nx.DiGraph()
         self.stream_graph = nx.DiGraph()
@@ -76,14 +78,15 @@ class Topology:
 
             json_so['streams']['stream' + str(i)] = json_stream
             streams += ['stream' + str(i)]
-
-        # response, content = self.request('', 'POST', json.dumps(json_so))
-        # if int(response['status']) >= 300:
-        #     print(content + '\n')
-        #     return []
-        # json_content = json.loads(content)
-        # so_id = json_content['id']
-        so_id = str(uuid.uuid4())
+        if self.deploy:
+            response, content = self.request('', 'POST', json.dumps(json_so))
+            if int(response['status']) >= 300:
+                print(content + '\n')
+                return []
+            json_content = json.loads(content)
+            so_id = json_content['id']
+        else:
+            so_id = str(uuid.uuid4())
 
         self.so_graph.add_node(so_id)
 
@@ -121,13 +124,15 @@ class Topology:
         json_so['groups'] = groups
         json_so['streams'] = dict(
             list(json_so['streams'].items()) + list(cstreams.items()))
-        # response, content = self.request('', 'POST', json.dumps(json_so))
-        # if int(response['status']) >= 300:
-        #     print(content + '\n')
-        #     return [], []
-        # json_content = json.loads(content)
-        # so_id = json_content['id']
-        so_id = str(uuid.uuid4())
+        if self.deploy:
+            response, content = self.request('', 'POST', json.dumps(json_so))
+            if int(response['status']) >= 300:
+                print(content + '\n')
+                return [], []
+            json_content = json.loads(content)
+            so_id = json_content['id']
+        else:
+            so_id = str(uuid.uuid4())
 
         self.so_graph.add_node(so_id)
         for initial_stream_id in initial_stream_ids:

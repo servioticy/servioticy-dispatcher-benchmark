@@ -7,7 +7,7 @@ import multiprocessing
 import numpy
 import networkx as nx
 import pylab as p
-
+import csv
 
 def all_simple_paths_len(G, sources):
 
@@ -70,7 +70,7 @@ def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()
 #         path_lens.append(partlen)
 #     return path_lens
 
-def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=True):
+def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=""):
     by_input = {}
     graphs = {}
     printed_graphs = {}
@@ -108,7 +108,7 @@ def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=Tru
                 sources.append(n)
             if out_degrees[G.nodes()[n]] == 0:
                 sinks.append(n)
-        if show:
+        if show_graphs:
             node_colors = ['r'] * len(G.node)
             for i in sinks:
                 node_colors[i] = 'g'
@@ -150,8 +150,8 @@ def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=Tru
             str(simple_paths[-1] if len(simple_paths) > 0 else 0),
             str(numpy.mean(simple_paths) if len(simple_paths) > 0 else 0),
             str(numpy.std(simple_paths) if len(simple_paths) > 0 else 0),
-            str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
-            str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
+            # str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
+            # str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
         if csvfile == None:
             for i in range(len(graph_key) + 4):
@@ -184,10 +184,16 @@ def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=Tru
                 print("Vertex per path max: " + next(info_pos))
                 print("Vertex per path mean: " + next(info_pos))
                 print("Vertex per path standard deviation: " + next(info_pos))
-            print("Degree in-assortativity coefficient: " + next(info_pos))
-            print("Degree out-assortativity coefficient: " + next(info_pos))
+            # print("Degree in-assortativity coefficient: " + next(info_pos))
+            # print("Degree out-assortativity coefficient: " + next(info_pos))
             print()
-    if show:
+        if csvfile != None:
+            with open(csvfile, 'a', newline='') as f:
+                writer = csv.writer(f, delimiter=',',
+                                        quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                graph_info = prependcsv + graph_info
+                writer.writerow(graph_info)
+    if show_graphs:
         p.show()
     return
 
