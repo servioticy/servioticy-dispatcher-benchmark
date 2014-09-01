@@ -25,14 +25,14 @@ def main():
                 for i in range(len(su.topologies)):
                     nx.write_gml(su.topologies[i].stream_graph,
                                  su.config['TOPOLOGIES']['GraphsDir'] + 'stream_graph_' + str(i) + '.gml')
-                visualization.show(su.config['TOPOLOGIES']['GraphsDir'], csvfile="space.csv", show_graphs=False, prependcsv=[sos,str(j)])
+                visualization.show(su.config['TOPOLOGIES']['GraphsDir'], csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])
 
             su = setup.Setup('../benchmark.ini', False, sos, operators)
             clean_dir(su.config['TOPOLOGIES']['GraphsDir'])
             for i in range(len(su.topologies)):
                 nx.write_gml(su.topologies[i].stream_graph,
                              su.config['TOPOLOGIES']['GraphsDir'] + 'stream_graph_' + str(i) + '.gml')
-            visualization.show(su.config['TOPOLOGIES']['GraphsDir'], csvfile="space.csv", show_graphs=False, prependcsv=[sos,operators])
+            visualization.show(su.config['TOPOLOGIES']['GraphsDir'], csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,operators])
 
             if j == 5 * int(sos):
                 su = setup.Setup('../benchmark.ini', False, sos, str(j))
@@ -40,7 +40,7 @@ def main():
                 for i in range(len(su.topologies)):
                     nx.write_gml(su.topologies[i].stream_graph,
                                  su.config['TOPOLOGIES']['GraphsDir'] + 'stream_graph_' + str(i) + '.gml')
-                visualization.show(su.config['TOPOLOGIES']['GraphsDir'], csvfile="space.csv", show_graphs=False, prependcsv=[sos,str(j)])
+                visualization.show(su.config['TOPOLOGIES']['GraphsDir'], csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])
     return
 
 
