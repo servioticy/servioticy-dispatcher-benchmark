@@ -4,7 +4,7 @@ import threading
 import queue
 import multiprocessing
 
-import numpy
+import statistics
 import networkx as nx
 import pylab as p
 import csv
@@ -139,17 +139,17 @@ def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=Tru
             str(len(sources)),
             str(len(sinks)),
             str(in_degrees[-1]),
-            str(numpy.mean(in_degrees, axis=0)),
-            str(numpy.std(in_degrees, axis=0)),
+            str(statistics.mean(in_degrees)),
+            str(statistics.stdev(in_degrees)),
             str(out_degrees[-1]),
-            str(numpy.mean(out_degrees, axis=0)),
-            str(numpy.std(out_degrees, axis=0)),
+            str(statistics.mean(out_degrees)),
+            str(statistics.stdev(out_degrees)),
             str(nx.is_directed_acyclic_graph(G)),
             str(len(simple_paths)),
             str(simple_paths[0] if len(simple_paths) > 0 else 0),
             str(simple_paths[-1] if len(simple_paths) > 0 else 0),
-            str(numpy.mean(simple_paths) if len(simple_paths) > 0 else 0),
-            str(numpy.std(simple_paths) if len(simple_paths) > 0 else 0),
+            str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
+            str(statistics.stdev(simple_paths) if len(simple_paths) > 0 else 0),
             # str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
             # str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
