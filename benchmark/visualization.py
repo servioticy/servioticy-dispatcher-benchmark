@@ -149,7 +149,7 @@ def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=Tru
             str(simple_paths[0] if len(simple_paths) > 0 else 0),
             str(simple_paths[-1] if len(simple_paths) > 0 else 0),
             str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
-            str(statistics.stdev(simple_paths) if len(simple_paths) > 0 else 0),
+            str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
             # str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
             # str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
