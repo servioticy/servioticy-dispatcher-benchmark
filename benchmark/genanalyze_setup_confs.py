@@ -15,7 +15,7 @@ def clean_dir(dir):
 
 
 def main():
-    for i in range(1, int(sys.argv[1])+1):
+    for i in range(int(sys.argv[1]), int(sys.argv[2])+1):
         sos = str(i)
         for j in range(1, 5*int(sos)+1):
             operators = "random.expovariate(1/"+str(j)+")"
