@@ -41,7 +41,7 @@ class Topology:
 
         self.noperands = operands
 
-        self.deploy = deploy;
+        self.deploy = deploy
 
         self.so_graph = nx.DiGraph()
         self.stream_graph = nx.DiGraph()
@@ -328,7 +328,7 @@ class Topology:
 
 
 def main():
-    setup = Setup('../benchmark.ini')
+    setup = Setup('../benchmark.ini', False)
     setup.write_initial_streams(setup.config['TOPOLOGIES']['InitialStreamsFile'])
 
     for i in range(len(setup.topologies)):
