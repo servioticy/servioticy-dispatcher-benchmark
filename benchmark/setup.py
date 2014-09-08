@@ -140,11 +140,15 @@ class Topology:
         for initial_stream_id in initial_stream_ids:
             self.initial_streams += [[so_id, initial_stream_id]]
             self.stream_graph.add_node(so_id + ":" + initial_stream_id)
-        for stream_id in json_so['streams'].keys():
+        stream_keys = list(json_so['streams'].keys())
+        for stream_id in stream_keys:
             self.streams += [[so_id, stream_id]]
             self.stream_graph.add_node(so_id + ":" + stream_id)
             if stream_id in new_dependencies:
-                self.dependencies[len(self.streams)-1] = new_dependencies[stream_id]
+                if new_dependencies[stream_id][0] in stream_keys:
+                    self.dependencies[len(self.streams)-1] = stream_keys.index(new_dependencies[stream_id][0])
+                else:
+                    self.dependencies[len(self.streams)-1] = new_dependencies[stream_id]
             else:
                 self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
 
@@ -266,7 +270,12 @@ class Topology:
                 else:
                     sel_operand = sel_operand - len(groups)
                     if streams[sel_operand] not in new_dependencies.keys():
-                        local_dependencies.extend(streams[sel_operand])
+                        if streams[sel_operand] in local_dependencies:
+                            streams.pop(sel_operand)
+                            found = False
+                            continue
+                        else:
+                            local_dependencies.extend([streams[sel_operand]])
                     else:
                         for dependency in new_dependencies[sel_operand]:
                             if dependency in local_dependencies:
@@ -321,7 +330,12 @@ class Topology:
                 else:
                     sel_operand = sel_operand - len(groups)
                     if streams[sel_operand] not in new_dependencies.keys():
-                        local_dependencies.extend(streams[sel_operand])
+                        if streams[sel_operand] in local_dependencies:
+                            streams.pop(sel_operand)
+                            found = False
+                            continue
+                        else:
+                            local_dependencies.extend([streams[sel_operand]])
                     else:
                         for dependency in new_dependencies[streams[sel_operand]]:
                             if dependency in local_dependencies:

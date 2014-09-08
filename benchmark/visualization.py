@@ -1,64 +1,64 @@
 import sys
 import os
-# import threading
+import threading
 import queue
-# import multiprocessing
+import multiprocessing
 
 import statistics
 import networkx as nx
 import pylab as p
 import csv
 
-# def all_simple_paths_len(G, sources):
-#
-#     if not isinstance(sources, list):
-#         sources = [sources]
-#
-#     for source in sources:
-#         if source not in G:
-#             raise nx.NetworkXError('source node %s not in graph'%sources)
-#     result = []
-#     q = queue.Queue()
-#     for source in sources:
-#         result.extend(_all_simple_paths_graph_len(G, source))
-#
-#     return result
-#
-# def _all_simple_paths_graph_worker(G, source, visited, q, used_workers):
-#     q.put(_all_simple_paths_graph_len(G, source, visited, used_workers))
-#
-#
-# def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()):
-#     used_workers.put(1)
-#     workers = []
-#     worker_results = queue.Queue()
-#     result = sorted([])
-#     stack = [iter(G[source])]
-#     while stack:
-#             children = stack[-1]
-#             child = next(children, None)
-#             if child is not None:
-#                 if len(G[child]) == 0:
-#                     visited += 1
-#                     result.append(visited)
-#                 else:
-#                     visited += 1
-#                 cores = multiprocessing.cpu_count()
-#                 if cores > used_workers.qsize():
-#                     workers.append(threading.Thread(target=_all_simple_paths_graph_worker,
-#                                                     args=(G, child, visited, worker_results, used_workers)))
-#                     workers[-1].daemon = True
-#                     workers[-1].start()
-#                     visited -= 1
-#                 else:
-#                     stack.append(iter(G[child]))
-#             else:
-#                 stack.pop()
-#                 visited -= 1
-#     used_workers.get()
-#     for worker in workers:
-#         result.extend(worker_results.get())
-#     return sorted(result)
+def all_simple_paths_len(G, sources):
+
+    if not isinstance(sources, list):
+        sources = [sources]
+
+    for source in sources:
+        if source not in G:
+            raise nx.NetworkXError('source node %s not in graph'%sources)
+    result = []
+    q = queue.Queue()
+    for source in sources:
+        result.extend(_all_simple_paths_graph_len(G, source))
+
+    return result
+
+def _all_simple_paths_graph_worker(G, source, visited, q, used_workers):
+    q.put(_all_simple_paths_graph_len(G, source, visited, used_workers))
+
+
+def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()):
+    used_workers.put(1)
+    workers = []
+    worker_results = queue.Queue()
+    result = sorted([])
+    stack = [iter(G[source])]
+    while stack:
+            children = stack[-1]
+            child = next(children, None)
+            if child is not None:
+                if len(G[child]) == 0:
+                    visited += 1
+                    result.append(visited)
+                else:
+                    visited += 1
+                cores = multiprocessing.cpu_count()
+                if cores > used_workers.qsize():
+                    workers.append(threading.Thread(target=_all_simple_paths_graph_worker,
+                                                    args=(G, child, visited, worker_results, used_workers)))
+                    workers[-1].daemon = True
+                    workers[-1].start()
+                    visited -= 1
+                else:
+                    stack.append(iter(G[child]))
+            else:
+                stack.pop()
+                visited -= 1
+    used_workers.get()
+    for worker in workers:
+        result.extend(worker_results.get())
+    return sorted(result)
 
 
 # def dag_paths_lens(G, source, partlen=0):
@@ -70,28 +70,28 @@ import csv
 #         path_lens.append(partlen)
 #     return path_lens
 
-def num_paths(G, targets):
-    rG = G.reverse()
-    graph_paths = {}
-    q = queue.Queue()
-    result = 0
-    visited = []
-    for target in targets:
-        graph_paths[target] = 1
-        q.put(target)
-        visited.append(target)
-    while q.qsize() > 0:
-        node = q.get()
-        for child in rG[node]:
-            if child not in visited:
-                graph_paths[child] = 0
-                q.put(child)
-                visited.append(child)
-            graph_paths[child] += graph_paths[node]
-            if len(rG[child]) == 0:
-                result += graph_paths[child]
-
-    return result
+# def num_paths(G, targets):
+#     rG = G.reverse()
+#     graph_paths = {}
+#     q = queue.Queue()
+#     result = 0
+#     visited = []
+#     for target in targets:
+#         graph_paths[target] = 1
+#         q.put(target)
+#         visited.append(target)
+#     while q.qsize() > 0:
+#         node = q.get()
+#         for child in rG[node]:
+#             if child not in visited:
+#                 graph_paths[child] = 0
+#                 q.put(child)
+#                 visited.append(child)
+#             graph_paths[child] += graph_paths[node]
+#             if len(rG[child]) == 0:
+#                 result += graph_paths[child]
+#
+#     return result
 
 def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=""):
     by_input = {}
@@ -143,8 +143,8 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             out_degrees.append(G.out_degree(node))
             out_degrees = sorted(out_degrees)
 
-        # simple_paths = []
-        # simple_paths.extend(all_simple_paths_len(G, sources=sources))
+        simple_paths = []
+        simple_paths.extend(all_simple_paths_len(G, sources=sources))
 
         graph_info = [
             str(len(G.node)),
@@ -161,13 +161,13 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             str(statistics.mean(out_degrees)),
             str(statistics.stdev(out_degrees)),
             str(nx.is_directed_acyclic_graph(G)),
-            str(num_paths(G,sinks)),
-            # str(simple_paths[0] if len(simple_paths) > 0 else 0),
-            # str(simple_paths[-1] if len(simple_paths) > 0 else 0),
-            # str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
-            # str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
-            # str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
-            # str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
+            str(len(simple_paths)),
+            str(simple_paths[0] if len(simple_paths) > 0 else 0),
+            str(simple_paths[-1] if len(simple_paths) > 0 else 0),
+            str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
+            str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
+            str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
+            str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
         if csvfile == None:
             for i in range(len(graph_key) + 4):
@@ -194,14 +194,14 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             print("Paths (from a source to a sink): " + next(info_pos))
             # simple_paths_len = []
             # for i in range(len(simple_paths)):
-            # simple_paths_len.append(len(simple_paths[i]))
-            # if len(simple_paths) > 0:
-            #     print("Vertex per path min: " + next(info_pos))
-            #     print("Vertex per path max: " + next(info_pos))
-            #     print("Vertex per path mean: " + next(info_pos))
-            #     print("Vertex per path standard deviation: " + next(info_pos))
-            # print("Degree in-assortativity coefficient: " + next(info_pos))
-            # print("Degree out-assortativity coefficient: " + next(info_pos))
+            #     simple_paths_len.append(len(simple_paths[i]))
+            if len(simple_paths) > 0:
+                print("Vertex per path min: " + next(info_pos))
+                print("Vertex per path max: " + next(info_pos))
+                print("Vertex per path mean: " + next(info_pos))
+                print("Vertex per path standard deviation: " + next(info_pos))
+            print("Degree in-assortativity coefficient: " + next(info_pos))
+            print("Degree out-assortativity coefficient: " + next(info_pos))
             print()
         if csvfile != None:
             with open(csvfile, 'a', newline='') as f:
