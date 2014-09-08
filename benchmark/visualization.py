@@ -93,11 +93,6 @@ def num_paths(G, targets):
 
     return result
 
-
-
-
-
-
 def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=""):
     by_input = {}
     printed_graphs = {}
@@ -195,7 +190,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             print("Out degrees max: " + next(info_pos))
             print("Out degrees mean: " + next(info_pos))
             print("Out degrees standard deviation: " + next(info_pos))
-            print("It is a DAG: " + next(info_pos))
+            print("DAG: " + next(info_pos))
             print("Paths (from a source to a sink): " + next(info_pos))
             # simple_paths_len = []
             # for i in range(len(simple_paths)):

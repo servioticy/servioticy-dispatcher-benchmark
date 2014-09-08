@@ -38,6 +38,7 @@ class Topology:
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
+        self.dependencies = {}
 
         self.noperands = operands
 
@@ -93,6 +94,7 @@ class Topology:
         for stream in streams:
             self.initial_streams += [[so_id, stream]]
             self.streams += [[so_id, stream]]
+            self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
 
             self.stream_graph.add_node(so_id + ":" + stream)
 
@@ -119,7 +121,7 @@ class Topology:
 
         # CStreams
         groups = {}
-        input_sets, cstreams = self.make_cstreams(initial_stream_ids, groups)
+        input_sets, cstreams, new_dependencies = self.make_cstreams(initial_stream_ids, groups)
         # Groups
         json_so['groups'] = groups
         json_so['streams'] = dict(
@@ -141,6 +143,11 @@ class Topology:
         for stream_id in json_so['streams'].keys():
             self.streams += [[so_id, stream_id]]
             self.stream_graph.add_node(so_id + ":" + stream_id)
+            if stream_id in new_dependencies:
+                self.dependencies[len(self.streams)-1] = new_dependencies[stream_id]
+            else:
+                self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
+
 
         for k in json_so['groups'].keys():
             for soid in json_so['groups'][k]["soIds"]:
@@ -185,18 +192,20 @@ class Topology:
         input_sets = {}
         if num_cstreams < 1:
             num_cstreams = 1
-        stream_ids = []
-        stream_ids += init_streams
+        new_streams = []
+        new_streams += init_streams
+        new_dependencies = {}
 
         for i in range(num_cstreams):
-            input_sets['cstream' + str(i)], cstreams['cstream' + str(i)] = self.make_cstream(stream_ids, existing_groups)
-            stream_ids += ['cstream' + str(i)]
+            input_sets['cstream' + str(i)], cstreams['cstream' + str(i)], local_dependencies = self.make_cstream(new_streams, new_dependencies, existing_groups)
+            new_streams += ['cstream' + str(i)]
+            new_dependencies['cstream' + str(i)] = local_dependencies
 
-        return input_sets, cstreams
+        return input_sets, cstreams, new_dependencies
 
 
-    def make_cstream(self, stream_subset, existing_groups):
-        input_sets, json_channels = self.make_channels(stream_subset, existing_groups)
+    def make_cstream(self, new_streams, new_dependencies, existing_groups):
+        input_sets, json_channels, local_dependencies = self.make_channels(new_streams, new_dependencies, existing_groups)
 
         json_file = open('./jsons/stream.json')
         json_cstream = json.load(json_file)
@@ -204,10 +213,10 @@ class Topology:
 
         json_cstream['channels'] = json_channels
 
-        return input_sets, json_cstream
+        return input_sets, json_cstream, local_dependencies
 
 
-    def make_channels(self, stream_subset, existing_groups):
+    def make_channels(self, new_streams, new_dependencies, existing_groups):
         channels = {}
         num_channels = round(eval(self.config['TOPOLOGIES']['Channels']))
         if num_channels < 1:
@@ -217,43 +226,67 @@ class Topology:
         if operands < 1:
             operands = 1
 
-        group_sets, stream_sets = self.distribute_operands(stream_subset, operands, operand_distribution, existing_groups)
+        group_sets, stream_sets, local_dependencies = self.distribute_operands(new_streams, new_dependencies, operands, operand_distribution, existing_groups)
 
         input_sets = {"groups": group_sets, "streams": stream_sets}
 
         for i in range(num_channels):
             channels['channel' + str(i)] = self.make_channel(group_sets + stream_sets)
 
-        return input_sets, channels
+        return input_sets, channels, local_dependencies
 
 
-    def distribute_operands_det(self, new_streams, num_operands, existing_groups):
+    def distribute_operands_det(self, new_streams, new_dependencies, num_operands, existing_groups):
         operand_sets = []
         new_groups = []
         groups = list(self.streams)
         streams = list(new_streams)
         nm = num_operands
+        local_dependencies = []
         if nm > len(new_streams + self.streams):
             nm = len(new_streams + self.streams)
         for j in range(nm):
-            if len(streams + groups) == 0:
-                break
-            sel_operand = self.det_operands_index = self.det_operands_index + j % len(streams + groups)
-            if sel_operand < len(groups):
-                groupid = self.make_group(groups.pop(sel_operand), existing_groups)
-                new_groups += [groupid]
-            else:
-                sel_operand = sel_operand - len(groups)
-                operand_sets += [streams.pop(sel_operand)]
+            found = False
+            while not found:
+                found = True
+                if len(streams + groups) == 0:
+                    break
+                sel_operand = self.det_operands_index = self.det_operands_index + j % len(streams + groups)
+                if sel_operand < len(groups):
+                    for dependency in self.dependencies[sel_operand]:
+                        if dependency in local_dependencies:
+                            groups.pop(sel_operand)
+                            found = False
+                            break
+                    if not found:
+                        continue
+                    local_dependencies.extend(self.dependencies[sel_operand])
+                    groupid = self.make_group(groups.pop(sel_operand), existing_groups)
+                    new_groups += [groupid]
+                else:
+                    sel_operand = sel_operand - len(groups)
+                    if streams[sel_operand] not in new_dependencies.keys():
+                        local_dependencies.extend(streams[sel_operand])
+                    else:
+                        for dependency in new_dependencies[sel_operand]:
+                            if dependency in local_dependencies:
+                                streams.pop(sel_operand)
+                                found = False
+                                break
+                        if not found:
+                            continue
+                        local_dependencies.extend(new_dependencies[sel_operand])
+                    operand_sets += [streams.pop(sel_operand)]
         self.det_operands_index = self.det_operands_index + 1 % len(streams + groups)
-        return new_groups, operand_sets
+        return new_groups, operand_sets, local_dependencies
 
-    def distribute_operands(self, new_streams, num_operands, distribution, existing_groups):
+    def distribute_operands(self, new_streams, new_dependencies, num_operands, distribution, existing_groups):
         # The operands can be repeated
         if distribution == 'deterministic':
             return self.distribute_operands_det(new_streams, num_operands, existing_groups)
         operand_sets = []
         new_groups = []
+        local_dependencies = []
 
         nm = num_operands
         groups = list(self.streams)
@@ -261,24 +294,45 @@ class Topology:
         for j in range(nm):
             if len(streams + groups) == 0:
                 break
-            sel_operand = round(eval(distribution))
-            # if sel_operand < 0 or sel_operand >= len(operands):
-            #     continue
-            if sel_operand < 0:
-                sel_operand = 0
-            elif sel_operand > 1:
-                sel_operand = 1
-            sel_operand = round(sel_operand * (len(streams + groups) - 1))
-            if sel_operand < 0:
-                continue
-            elif sel_operand < len(groups):
-                groupid = self.make_group(groups.pop(sel_operand), existing_groups)
-                new_groups += [groupid]
-            else:
-                sel_operand = sel_operand - len(groups)
-                operand_sets += [streams.pop(sel_operand)]
-        return new_groups, operand_sets
-
+            found = False
+            while not found:
+                found = True
+                if len(streams + groups) == 0:
+                    break
+                sel_operand = round(eval(distribution))
+                # if sel_operand < 0 or sel_operand >= len(operands):
+                #     continue
+                if sel_operand < 0:
+                    sel_operand = 0
+                elif sel_operand > 1:
+                    sel_operand = 1
+                sel_operand = round(sel_operand * (len(streams + groups) - 1))
+                if sel_operand < len(groups):
+                    for dependency in self.dependencies[sel_operand]:
+                        if dependency in local_dependencies:
+                            groups.pop(sel_operand)
+                            found = False
+                            break
+                    if not found:
+                        continue
+                    local_dependencies.extend(self.dependencies[sel_operand])
+                    groupid = self.make_group(groups.pop(sel_operand), existing_groups)
+                    new_groups += [groupid]
+                else:
+                    sel_operand = sel_operand - len(groups)
+                    if streams[sel_operand] not in new_dependencies.keys():
+                        local_dependencies.extend(streams[sel_operand])
+                    else:
+                        for dependency in new_dependencies[streams[sel_operand]]:
+                            if dependency in local_dependencies:
+                                streams.pop(sel_operand)
+                                found = False
+                                break
+                        if not found:
+                            continue
+                        local_dependencies.extend(new_dependencies[streams[sel_operand]])
+                    operand_sets += [streams.pop(sel_operand)]
+        return new_groups, operand_sets, local_dependencies
 
     def make_channel(self, operands):
         ms = round(eval(self.config['TOPOLOGIES']['CurrentValueMS']))
