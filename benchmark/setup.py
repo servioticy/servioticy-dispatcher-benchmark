@@ -146,7 +146,7 @@ class Topology:
             self.stream_graph.add_node(so_id + ":" + stream_id)
             if stream_id in new_dependencies:
                 if new_dependencies[stream_id][0] in stream_keys:
-                    self.dependencies[len(self.streams)-1] = stream_keys.index(new_dependencies[stream_id][0])
+                    self.dependencies[len(self.streams)-1] = [stream_keys.index(new_dependencies[stream_id][0])]
                 else:
                     self.dependencies[len(self.streams)-1] = new_dependencies[stream_id]
             else:
