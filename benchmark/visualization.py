@@ -143,8 +143,8 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             out_degrees.append(G.out_degree(node))
             out_degrees = sorted(out_degrees)
 
-        # simple_paths = []
-        # simple_paths.extend(all_simple_paths_len(G, sources=sources))
+        simple_paths = []
+        simple_paths.extend(all_simple_paths_len(G, sources=sources))
 
         graph_info = [
             str(len(G.node)),
@@ -161,14 +161,14 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             str(statistics.mean(out_degrees)),
             str(statistics.stdev(out_degrees)),
             str(nx.is_directed_acyclic_graph(G)),
-            str(num_paths(G,sinks)),
-            # str(len(simple_paths)),
-            # str(simple_paths[0] if len(simple_paths) > 0 else 0),
-            # str(simple_paths[-1] if len(simple_paths) > 0 else 0),
-            # str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
-            # str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
-            # str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
-            # str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
+            # str(num_paths(G,sinks)),
+            str(len(simple_paths)),
+            str(simple_paths[0] if len(simple_paths) > 0 else 0),
+            str(simple_paths[-1] if len(simple_paths) > 0 else 0),
+            str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
+            str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
+            str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
+            str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
         if csvfile == None:
             for i in range(len(graph_key) + 4):
@@ -192,18 +192,15 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             print("Out degrees mean: " + next(info_pos))
             print("Out degrees standard deviation: " + next(info_pos))
             print("DAG: " + next(info_pos))
-            print("Paths (from a source to a sink): " + next(info_pos))
             # print("Paths (from a source to a sink): " + next(info_pos))
-            # simple_paths_len = []
-            # for i in range(len(simple_paths)):
-            #     simple_paths_len.append(len(simple_paths[i]))
-            # if len(simple_paths) > 0:
-            #     print("Vertex per path min: " + next(info_pos))
-            #     print("Vertex per path max: " + next(info_pos))
-            #     print("Vertex per path mean: " + next(info_pos))
-            #     print("Vertex per path standard deviation: " + next(info_pos))
-            # print("Degree in-assortativity coefficient: " + next(info_pos))
-            # print("Degree out-assortativity coefficient: " + next(info_pos))
+            print("Paths (from a source to a sink): " + next(info_pos))
+            if len(simple_paths) > 0:
+                print("Vertex per path min: " + next(info_pos))
+                print("Vertex per path max: " + next(info_pos))
+                print("Vertex per path mean: " + next(info_pos))
+                print("Vertex per path standard deviation: " + next(info_pos))
+            print("Degree in-assortativity coefficient: " + next(info_pos))
+            print("Degree out-assortativity coefficient: " + next(info_pos))
             print()
         if csvfile != None:
             with open(csvfile, 'a', newline='') as f:
