@@ -70,28 +70,28 @@ def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()
 #         path_lens.append(partlen)
 #     return path_lens
 
-# def num_paths(G, targets):
-#     rG = G.reverse()
-#     graph_paths = {}
-#     q = queue.Queue()
-#     result = 0
-#     visited = []
-#     for target in targets:
-#         graph_paths[target] = 1
-#         q.put(target)
-#         visited.append(target)
-#     while q.qsize() > 0:
-#         node = q.get()
-#         for child in rG[node]:
-#             if child not in visited:
-#                 graph_paths[child] = 0
-#                 q.put(child)
-#                 visited.append(child)
-#             graph_paths[child] += graph_paths[node]
-#             if len(rG[child]) == 0:
-#                 result += graph_paths[child]
-#
-#     return result
+def num_paths(G, targets):
+    rG = G.reverse()
+    graph_paths = {}
+    q = queue.Queue()
+    result = 0
+    visited = []
+    for target in targets:
+        graph_paths[target] = 1
+        q.put(target)
+        visited.append(target)
+    while q.qsize() > 0:
+        node = q.get()
+        for child in rG[node]:
+            if child not in visited:
+                graph_paths[child] = 0
+                q.put(child)
+                visited.append(child)
+            graph_paths[child] += graph_paths[node]
+            if len(rG[child]) == 0:
+                result += graph_paths[child]
+
+    return result
 
 def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=""):
     by_input = {}
@@ -161,13 +161,14 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             str(statistics.mean(out_degrees)),
             str(statistics.stdev(out_degrees)),
             str(nx.is_directed_acyclic_graph(G)),
-            str(len(simple_paths)),
-            str(simple_paths[0] if len(simple_paths) > 0 else 0),
-            str(simple_paths[-1] if len(simple_paths) > 0 else 0),
-            str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
-            str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
-            str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
-            str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
+            str(num_paths(G,sinks)),
+# str(len(simple_paths)),
+            # str(simple_paths[0] if len(simple_paths) > 0 else 0),
+            # str(simple_paths[-1] if len(simple_paths) > 0 else 0),
+            # str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
+            # str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
+            # str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
+            # str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
         if csvfile == None:
             for i in range(len(graph_key) + 4):
@@ -195,13 +196,13 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             # simple_paths_len = []
             # for i in range(len(simple_paths)):
             #     simple_paths_len.append(len(simple_paths[i]))
-            if len(simple_paths) > 0:
-                print("Vertex per path min: " + next(info_pos))
-                print("Vertex per path max: " + next(info_pos))
-                print("Vertex per path mean: " + next(info_pos))
-                print("Vertex per path standard deviation: " + next(info_pos))
-            print("Degree in-assortativity coefficient: " + next(info_pos))
-            print("Degree out-assortativity coefficient: " + next(info_pos))
+            # if len(simple_paths) > 0:
+            #     print("Vertex per path min: " + next(info_pos))
+            #     print("Vertex per path max: " + next(info_pos))
+            #     print("Vertex per path mean: " + next(info_pos))
+            #     print("Vertex per path standard deviation: " + next(info_pos))
+            # print("Degree in-assortativity coefficient: " + next(info_pos))
+            # print("Degree out-assortativity coefficient: " + next(info_pos))
             print()
         if csvfile != None:
             with open(csvfile, 'a', newline='') as f:

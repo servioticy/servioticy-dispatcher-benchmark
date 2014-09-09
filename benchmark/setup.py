@@ -141,16 +141,20 @@ class Topology:
             self.initial_streams += [[so_id, initial_stream_id]]
             self.stream_graph.add_node(so_id + ":" + initial_stream_id)
         stream_keys = list(json_so['streams'].keys())
-        for stream_id in stream_keys:
+        for i in range(len(stream_keys)):
+            stream_id = stream_keys[i]
             self.streams += [[so_id, stream_id]]
             self.stream_graph.add_node(so_id + ":" + stream_id)
+            self.dependencies[len(self.streams)-1] = []
             if stream_id in new_dependencies:
-                if new_dependencies[stream_id][0] in stream_keys:
-                    self.dependencies[len(self.streams)-1] = [stream_keys.index(new_dependencies[stream_id][0])]
-                else:
-                    self.dependencies[len(self.streams)-1] = new_dependencies[stream_id]
+                for new_dependency in new_dependencies[stream_id]:
+                    if new_dependency in stream_keys:
+                        stream_pos = len(self.streams)-(i+1) + stream_keys.index(new_dependency)
+                        self.dependencies[len(self.streams)-1].append(stream_pos)
+                    else:
+                        self.dependencies[len(self.streams)-1].append(new_dependency)
             else:
-                self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
+                self.dependencies[len(self.streams)-1].append(len(self.streams)-1)
 
 
         for k in json_so['groups'].keys():
@@ -334,8 +338,7 @@ class Topology:
                             streams.pop(sel_operand)
                             found = False
                             continue
-                        else:
-                            local_dependencies.extend([streams[sel_operand]])
+                        local_dependencies.extend([streams[sel_operand]])
                     else:
                         for dependency in new_dependencies[streams[sel_operand]]:
                             if dependency in local_dependencies:
