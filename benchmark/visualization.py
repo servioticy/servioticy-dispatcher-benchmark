@@ -72,24 +72,24 @@ def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()
 
 def num_paths(G, targets):
     rG = G.reverse()
-    graph_paths = {}
     q = queue.Queue()
     result = 0
-    visited = []
     for target in targets:
+        graph_paths = {}
+        visited = []
         graph_paths[target] = 1
         q.put(target)
         visited.append(target)
-    while q.qsize() > 0:
-        node = q.get()
-        for child in rG[node]:
-            if child not in visited:
-                graph_paths[child] = 0
-                q.put(child)
-                visited.append(child)
-            graph_paths[child] += graph_paths[node]
-            if len(rG[child]) == 0:
-                result += graph_paths[child]
+        while q.qsize() > 0:
+            node = q.get()
+            for child in rG[node]:
+                if child not in visited:
+                    graph_paths[child] = 0
+                    q.put(child)
+                    visited.append(child)
+                graph_paths[child] += graph_paths[node]
+                if len(rG[child]) == 0:
+                    result += graph_paths[child]
 
     return result
 
@@ -143,8 +143,8 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             out_degrees.append(G.out_degree(node))
             out_degrees = sorted(out_degrees)
 
-        simple_paths = []
-        simple_paths.extend(all_simple_paths_len(G, sources=sources))
+        # simple_paths = []
+        # simple_paths.extend(all_simple_paths_len(G, sources=sources))
 
         graph_info = [
             str(len(G.node)),
@@ -162,7 +162,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             str(statistics.stdev(out_degrees)),
             str(nx.is_directed_acyclic_graph(G)),
             str(num_paths(G,sinks)),
-# str(len(simple_paths)),
+            # str(len(simple_paths)),
             # str(simple_paths[0] if len(simple_paths) > 0 else 0),
             # str(simple_paths[-1] if len(simple_paths) > 0 else 0),
             # str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
@@ -193,6 +193,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             print("Out degrees standard deviation: " + next(info_pos))
             print("DAG: " + next(info_pos))
             print("Paths (from a source to a sink): " + next(info_pos))
+            # print("Paths (from a source to a sink): " + next(info_pos))
             # simple_paths_len = []
             # for i in range(len(simple_paths)):
             #     simple_paths_len.append(len(simple_paths[i]))
