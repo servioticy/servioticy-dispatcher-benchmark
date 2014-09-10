@@ -8,6 +8,7 @@ import statistics
 import networkx as nx
 import pylab as p
 import csv
+import time
 
 def all_simple_paths_len(G, sources):
 
@@ -32,7 +33,7 @@ def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()
     used_workers.put(1)
     workers = []
     worker_results = queue.Queue()
-    result = sorted([])
+    result = []
     stack = [iter(G[source])]
     while stack:
             children = stack[-1]
@@ -58,7 +59,7 @@ def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()
     used_workers.get()
     for worker in workers:
         result.extend(worker_results.get())
-    return sorted(result)
+    return result
 
 
 # def dag_paths_lens(G, source, partlen=0):
@@ -70,26 +71,46 @@ def _all_simple_paths_graph_len(G, source, visited=1, used_workers=queue.Queue()
 #         path_lens.append(partlen)
 #     return path_lens
 
+def num_paths_worker(rG, target, result_q, used_workers):
+    used_workers.put(1)
+    q = queue.Queue()
+    graph_paths = {}
+    visited = []
+    graph_paths[target] = 1
+    q.put(target)
+    result = 0
+    visited.append(target)
+    while q.qsize() > 0:
+        node = q.get()
+        for child in rG[node]:
+            if child not in visited:
+                graph_paths[child] = 0
+                q.put(child)
+                visited.append(child)
+            graph_paths[child] += graph_paths[node]
+            if len(rG[child]) == 0:
+                result += graph_paths[child]
+    result_q.put(result)
+    used_workers.get()
+
 def num_paths(G, targets):
     rG = G.reverse()
-    q = queue.Queue()
+    workers = []
     result = 0
+    result_q = queue.Queue()
+    used_workers = queue.Queue()
+    cores = multiprocessing.cpu_count()
     for target in targets:
-        graph_paths = {}
-        visited = []
-        graph_paths[target] = 1
-        q.put(target)
-        visited.append(target)
-        while q.qsize() > 0:
-            node = q.get()
-            for child in rG[node]:
-                if child not in visited:
-                    graph_paths[child] = 0
-                    q.put(child)
-                    visited.append(child)
-                graph_paths[child] += graph_paths[node]
-                if len(rG[child]) == 0:
-                    result += graph_paths[child]
+        if cores > used_workers.qsize():
+            workers.append(threading.Thread(target=num_paths_worker,
+                                            args=(rG, target, result_q, used_workers)))
+            workers[-1].daemon = True
+            workers[-1].start()
+            time.sleep(0.02)
+        while cores == used_workers.qsize():
+            time.sleep(0.02)
+    for target in targets:
+        result += result_q.get()
 
     return result
 
@@ -144,7 +165,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             out_degrees = sorted(out_degrees)
 
         simple_paths = []
-        simple_paths.extend(all_simple_paths_len(G, sources=sources))
+        simple_paths.extend(sorted(all_simple_paths_len(G, sources=sources)))
 
         graph_info = [
             str(len(G.node)),

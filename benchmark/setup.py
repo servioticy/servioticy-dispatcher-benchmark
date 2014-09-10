@@ -7,9 +7,8 @@ import uuid
 import networkx as nx
 import httplib2
 
-
 class Setup:
-    def __init__(self, config_path, deploy=True,sos=None, operands=None):
+    def __init__(self, config_path, deploy=True, sos=None, operands=None):
         self.topologies = []
         self.config = configparser.ConfigParser()
         self.initial_streams = []
@@ -274,21 +273,16 @@ class Topology:
                 else:
                     sel_operand = sel_operand - len(groups)
                     if streams[sel_operand] not in new_dependencies.keys():
-                        if streams[sel_operand] in local_dependencies:
+                        new_dependencies[streams[sel_operand]] = streams[sel_operand]
+
+                    for dependency in new_dependencies[sel_operand]:
+                        if dependency in local_dependencies:
                             streams.pop(sel_operand)
                             found = False
-                            continue
-                        else:
-                            local_dependencies.extend([streams[sel_operand]])
-                    else:
-                        for dependency in new_dependencies[sel_operand]:
-                            if dependency in local_dependencies:
-                                streams.pop(sel_operand)
-                                found = False
-                                break
-                        if not found:
-                            continue
-                        local_dependencies.extend(new_dependencies[sel_operand])
+                            break
+                    if not found:
+                        continue
+                    local_dependencies.extend(new_dependencies[sel_operand])
                     operand_sets += [streams.pop(sel_operand)]
         self.det_operands_index = self.det_operands_index + 1 % len(streams + groups)
         return new_groups, operand_sets, local_dependencies
@@ -334,20 +328,16 @@ class Topology:
                 else:
                     sel_operand = sel_operand - len(groups)
                     if streams[sel_operand] not in new_dependencies.keys():
-                        if streams[sel_operand] in local_dependencies:
+                        new_dependencies[streams[sel_operand]] = streams[sel_operand]
+
+                    for dependency in new_dependencies[streams[sel_operand]]:
+                        if dependency in local_dependencies:
                             streams.pop(sel_operand)
                             found = False
-                            continue
-                        local_dependencies.extend([streams[sel_operand]])
-                    else:
-                        for dependency in new_dependencies[streams[sel_operand]]:
-                            if dependency in local_dependencies:
-                                streams.pop(sel_operand)
-                                found = False
-                                break
-                        if not found:
-                            continue
-                        local_dependencies.extend(new_dependencies[streams[sel_operand]])
+                            break
+                    if not found:
+                        continue
+                    local_dependencies.extend(new_dependencies[streams[sel_operand]])
                     operand_sets += [streams.pop(sel_operand)]
         return new_groups, operand_sets, local_dependencies
 
