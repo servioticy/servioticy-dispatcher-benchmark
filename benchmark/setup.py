@@ -244,8 +244,8 @@ class Topology:
 
 
     def distribute_operands_det(self, new_streams, new_dependencies, num_operands, existing_groups):
-        operand_sets = []
-        new_groups = []
+        sel_streams = []
+        sel_groups = []
         groups = list(self.streams)
         streams = list(new_streams)
         nm = num_operands
@@ -269,11 +269,11 @@ class Topology:
                         continue
                     local_dependencies.extend(self.dependencies[sel_operand])
                     groupid = self.make_group(groups.pop(sel_operand), existing_groups)
-                    new_groups += [groupid]
+                    sel_groups += [groupid]
                 else:
                     sel_operand = sel_operand - len(groups)
                     if streams[sel_operand] not in new_dependencies.keys():
-                        new_dependencies[streams[sel_operand]] = streams[sel_operand]
+                        new_dependencies[streams[sel_operand]] = [streams[sel_operand]]
 
                     for dependency in new_dependencies[sel_operand]:
                         if dependency in local_dependencies:
@@ -283,16 +283,16 @@ class Topology:
                     if not found:
                         continue
                     local_dependencies.extend(new_dependencies[sel_operand])
-                    operand_sets += [streams.pop(sel_operand)]
+                    sel_streams += [streams.pop(sel_operand)]
         self.det_operands_index = self.det_operands_index + 1 % len(streams + groups)
-        return new_groups, operand_sets, local_dependencies
+        return sel_groups, sel_streams, local_dependencies
 
     def distribute_operands(self, new_streams, new_dependencies, num_operands, distribution, existing_groups):
         # The operands can be repeated
         if distribution == 'deterministic':
             return self.distribute_operands_det(new_streams, num_operands, existing_groups)
-        operand_sets = []
-        new_groups = []
+        sel_streams = []
+        sel_groups = []
         local_dependencies = []
 
         nm = num_operands
@@ -324,11 +324,11 @@ class Topology:
                         continue
                     local_dependencies.extend(self.dependencies[sel_operand])
                     groupid = self.make_group(groups.pop(sel_operand), existing_groups)
-                    new_groups += [groupid]
+                    sel_groups += [groupid]
                 else:
                     sel_operand = sel_operand - len(groups)
                     if streams[sel_operand] not in new_dependencies.keys():
-                        new_dependencies[streams[sel_operand]] = streams[sel_operand]
+                        new_dependencies[streams[sel_operand]] = [streams[sel_operand]]
 
                     for dependency in new_dependencies[streams[sel_operand]]:
                         if dependency in local_dependencies:
@@ -338,8 +338,8 @@ class Topology:
                     if not found:
                         continue
                     local_dependencies.extend(new_dependencies[streams[sel_operand]])
-                    operand_sets += [streams.pop(sel_operand)]
-        return new_groups, operand_sets, local_dependencies
+                    sel_streams += [streams.pop(sel_operand)]
+        return sel_groups, sel_streams, local_dependencies
 
     def make_channel(self, operands):
         ms = round(eval(self.config['TOPOLOGIES']['CurrentValueMS']))
