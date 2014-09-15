@@ -12,16 +12,16 @@ class Setup:
         self.topologies = []
         self.config = configparser.ConfigParser()
         self.initial_streams = []
+        self.rnd = random.Random();
 
         self.config.read(config_path)
 
-        random.seed(1)
-
+        self.rnd.seed(a="1", version=2)
         num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
         if num_topologies < 1:
             num_topologies = 1
         for i in range(num_topologies):
-            self.topologies.append(Topology(config_path, deploy, sos, operands))
+            self.topologies.append(Topology(self.rnd, config_path, deploy, sos, operands))
             self.initial_streams += self.topologies[-1].initial_streams
         return
 
@@ -33,12 +33,12 @@ class Setup:
         return
 
 class Topology:
-    def __init__(self, config_path, deploy=True, sos=None, operands=None):
+    def __init__(self, rnd, config_path, deploy=True, sos=None, operands=None):
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
         self.dependencies = {}
-
+        self.rnd = rnd
         self.noperands = operands
 
         self.deploy = deploy
@@ -65,6 +65,7 @@ class Topology:
 
     def put_initial_so(self):
         streams = []
+
         num_initial_streams = round(eval(self.config['TOPOLOGIES']['InitialStreams']))
         if num_initial_streams < 1:
             num_initial_streams = 1
@@ -104,6 +105,7 @@ class Topology:
         stream_ids = []
         initial_streams = []
         streams = []
+
         num_streams = round(eval(self.config['TOPOLOGIES']['Streams']))
         if num_streams < 0:
             num_streams = 0
@@ -174,7 +176,7 @@ class Topology:
         return
 
     def make_stream(self):
-        num_channels = 1  # round(eval(self.config['TOPOLOGIES']['Channels']))
+        num_channels = round(eval(self.config['TOPOLOGIES']['Channels']))
         if num_channels < 1:
             num_channels = 1
         json_file = open('./jsons/initial_stream.json')

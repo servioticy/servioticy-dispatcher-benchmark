@@ -34,7 +34,7 @@ def main():
         ])
     for i in range(int(sys.argv[1]), int(sys.argv[2])+1):
         sos = str(i)
-        for j in range(1, 5*int(sos)+1):
+        for j in range(1, 5*int(sos)+int(sos)+1):
             operands = "random.expovariate(1/"+str(j)+")"
             if j == 1:
                 su = setup.Setup('../benchmark.ini', False, sos, str(j))
@@ -45,7 +45,7 @@ def main():
             for k in range(len(su.topologies)):
                 visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,operands])
 
-            if j == 5 * int(sos):
+            if j == 5 * int(sos) + int(sos):
                 su = setup.Setup('../benchmark.ini', False, sos, str(j))
                 for k in range(len(su.topologies)):
                     visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])

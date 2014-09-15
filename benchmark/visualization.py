@@ -138,18 +138,22 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
         G = printed_graphs[graph_key]
         sources = []
         sinks = []
+        sources_index = []
+        sinks_index= []
         in_degrees = G.in_degree(G)
         out_degrees = G.out_degree(G)
         for n in range(len(G.nodes())):
             if in_degrees[G.nodes()[n]] == 0:
+                sources_index.append(n)
                 sources.append(G.nodes()[n])
             if out_degrees[G.nodes()[n]] == 0:
+                sinks_index.append(n)
                 sinks.append(G.nodes()[n])
         if show_graphs:
             node_colors = ['r'] * len(G.node)
-            for i in sinks:
+            for i in sinks_index:
                 node_colors[i] = 'g'
-            for i in sources:
+            for i in sources_index:
                 node_colors[i] = 'b'
             p.figure(graph_key)
             nx.draw_spring(G, with_labels=True, node_color=node_colors)
@@ -191,7 +195,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
             str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
-        if csvfile == None:
+        if show_graphs:
             for i in range(len(graph_key) + 4):
                 print('*', end="")
             print('\n* ' + graph_key + ' *')
