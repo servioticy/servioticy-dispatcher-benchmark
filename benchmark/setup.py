@@ -16,7 +16,7 @@ class Setup:
 
         self.config.read(config_path)
 
-        self.rnd.seed(a="1", version=2)
+        self.rnd.seed(a="1")
         num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
         if num_topologies < 1:
             num_topologies = 1
