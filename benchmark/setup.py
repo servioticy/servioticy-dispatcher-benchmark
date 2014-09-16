@@ -12,16 +12,14 @@ class Setup:
         self.topologies = []
         self.config = configparser.ConfigParser()
         self.initial_streams = []
-        self.rnd = random.Random();
-
         self.config.read(config_path)
 
-        self.rnd.seed(a="1")
+        random.seed(a="1")
         num_topologies = round(eval(self.config['TOPOLOGIES']['Topologies']))
         if num_topologies < 1:
             num_topologies = 1
         for i in range(num_topologies):
-            self.topologies.append(Topology(self.rnd, config_path, deploy, sos, operands))
+            self.topologies.append(Topology(config_path, deploy, sos, operands))
             self.initial_streams += self.topologies[-1].initial_streams
         return
 
@@ -33,12 +31,11 @@ class Setup:
         return
 
 class Topology:
-    def __init__(self, rnd, config_path, deploy=True, sos=None, operands=None):
+    def __init__(self, config_path, deploy=True, sos=None, operands=None):
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
         self.dependencies = {}
-        self.rnd = rnd
         self.noperands = operands
 
         self.deploy = deploy
@@ -97,7 +94,6 @@ class Topology:
             self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
 
             self.stream_graph.add_node(so_id + ":" + stream)
-
         return
 
     def put_so(self):
@@ -142,6 +138,7 @@ class Topology:
             self.initial_streams += [[so_id, initial_stream_id]]
             self.stream_graph.add_node(so_id + ":" + initial_stream_id)
         stream_keys = list(json_so['streams'].keys())
+        stream_keys = sorted(stream_keys)
         for i in range(len(stream_keys)):
             stream_id = stream_keys[i]
             self.streams += [[so_id, stream_id]]
@@ -171,8 +168,6 @@ class Topology:
 
             for stream_id in input_sets[k]['streams']:
                 self.stream_graph.add_edge(so_id + ":" + stream_id, so_id + ":" + k)
-
-
         return
 
     def make_stream(self):

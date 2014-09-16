@@ -114,7 +114,7 @@ def num_paths(G, targets):
 
     return result
 
-def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=""):
+def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=[]):
     by_input = {}
     printed_graphs = {}
     if initso != None:
@@ -191,9 +191,9 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             str(simple_paths[0] if len(simple_paths) > 0 else 0),
             str(simple_paths[-1] if len(simple_paths) > 0 else 0),
             str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
-            str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
-            str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
-            str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
+            str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0)
+            # str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
+            # str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
         ]
         if show_graphs:
             for i in range(len(graph_key) + 4):
@@ -224,8 +224,8 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
                 print("Vertex per path max: " + next(info_pos))
                 print("Vertex per path mean: " + next(info_pos))
                 print("Vertex per path standard deviation: " + next(info_pos))
-            print("Degree in-assortativity coefficient: " + next(info_pos))
-            print("Degree out-assortativity coefficient: " + next(info_pos))
+            # print("Degree in-assortativity coefficient: " + next(info_pos))
+            # print("Degree out-assortativity coefficient: " + next(info_pos))
             print()
         if csvfile != None:
             with open(csvfile, 'a', newline='') as f:
