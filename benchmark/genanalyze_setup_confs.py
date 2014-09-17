@@ -4,7 +4,7 @@ from benchmark import setup
 import csv
 
 def main():
-    with open(sys.argv[3], 'a', newline='') as f:
+    with open("raw."+sys.argv[3], 'a', newline='') as f:
         writer = csv.writer(f, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow([
@@ -34,21 +34,39 @@ def main():
         ])
     for i in range(int(sys.argv[1]), int(sys.argv[2])+1):
         sos = str(i)
-        for j in range(1, 5*int(sos)+int(sos)+1):
+        for j in range(1, int(sos)+2):
             operands = "random.expovariate(1/"+str(j)+")"
             if j == 1:
                 su = setup.Setup('../benchmark.ini', False, sos, str(j))
                 for k in range(len(su.topologies)):
-                    visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])
+                    visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile="raw."+sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])
 
             su = setup.Setup('../benchmark.ini', False, sos, operands)
             for k in range(len(su.topologies)):
-                visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,operands])
+                visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile="raw."+sys.argv[3], show_graphs=False, prependcsv=[sos,operands])
 
-            if j == 5 * int(sos) + int(sos):
+            if j != 1 and j == int(sos)+1:
                 su = setup.Setup('../benchmark.ini', False, sos, str(j))
                 for k in range(len(su.topologies)):
-                    visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile=sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])
+                    visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile="raw."+sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])
+
+    with open("raw."+sys.argv[3], 'a', newline='') as f:
+        reader1 = csv.reader(f, delimiter=',', quotechar='"')
+        reader2 = csv.reader(f, delimiter=',', quotechar='"')
+        with open(sys.argv[3], 'a', newline='') as f:
+            writer = csv.writer(f, delimiter=',',
+                                quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            for row1 in reader1:
+                found = False
+                for row2 in reader2:
+                    if row1 == row2:
+                        break
+                    if row1[3] == row2[3] and row1[4] == row2[4] and row1[5] == row2[5]:
+                        found = True
+                        break
+                if not found:
+                    writer.writerow(row1)
+
     return
 
 
