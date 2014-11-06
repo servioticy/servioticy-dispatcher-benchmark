@@ -114,7 +114,7 @@ def num_paths(G, targets):
 
     return result
 
-def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=[]):
+def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=[], analysis=True):
     by_input = {}
     printed_graphs = {}
     if initso != None:
@@ -168,34 +168,34 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             out_degrees.append(G.out_degree(node))
             out_degrees = sorted(out_degrees)
 
-        simple_paths = []
-        simple_paths.extend(sorted(all_simple_paths_len(G, sources=sources)))
-
-        graph_info = [
-            str(len(G.node)),
-            str(len(simple_paths)),
-            str(nx.density(G.to_undirected())),
-            str(G.number_of_edges()),
-            str(nx.node_connectivity(G.to_undirected())),
-            str(nx.edge_connectivity(G.to_undirected())),
-            str(len(sources)),
-            str(len(sinks)),
-            str(in_degrees[-1]),
-            str(statistics.mean(in_degrees)),
-            str(statistics.stdev(in_degrees)),
-            str(out_degrees[-1]),
-            str(statistics.mean(out_degrees)),
-            str(statistics.stdev(out_degrees)),
-            str(nx.is_directed_acyclic_graph(G)),
-            # str(num_paths(G,sinks)),
-            str(simple_paths[0] if len(simple_paths) > 0 else 0),
-            str(simple_paths[-1] if len(simple_paths) > 0 else 0),
-            str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
-            str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
-            str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
-            str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
-        ]
-        if show_graphs:
+        if analysis :
+            simple_paths = []
+            simple_paths.extend(sorted(all_simple_paths_len(G, sources=sources)))
+            graph_info = [
+                str(len(G.node)),
+                str(len(simple_paths)),
+                str(nx.density(G.to_undirected())),
+                str(G.number_of_edges()),
+                str(nx.node_connectivity(G.to_undirected())),
+                str(nx.edge_connectivity(G.to_undirected())),
+                str(len(sources)),
+                str(len(sinks)),
+                str(in_degrees[-1]),
+                str(statistics.mean(in_degrees)),
+                str(statistics.stdev(in_degrees)),
+                str(out_degrees[-1]),
+                str(statistics.mean(out_degrees)),
+                str(statistics.stdev(out_degrees)),
+                str(nx.is_directed_acyclic_graph(G)),
+                # str(num_paths(G,sinks)),
+                str(simple_paths[0] if len(simple_paths) > 0 else 0),
+                str(simple_paths[-1] if len(simple_paths) > 0 else 0),
+                str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
+                str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
+                str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
+                str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
+            ]
+        if show_graphs and analysis:
             for i in range(len(graph_key) + 4):
                 print('*', end="")
             print('\n* ' + graph_key + ' *')
@@ -236,7 +236,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
     if show_graphs:
         p.show()
 
-def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv=""):
+def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=True, prependcsv="", analysis=True):
     graphs = {}
     if os.path.isdir(graphs_dir):
         for file in os.listdir(graphs_dir):
@@ -244,18 +244,18 @@ def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=Tru
     elif os.path.isfile(graphs_dir):
         graphs[graphs_dir] = nx.read_gml(graphs_dir)
 
-    show_graph(graphs, initso, initstream, csvfile, show_graphs, prependcsv)
+    show_graph(graphs, initso, initstream, csvfile, show_graphs, prependcsv, analysis)
 
     return
 
 
 def main():
     if len(sys.argv) == 2:
-        show(graphs_dir=sys.argv[1], show_graphs=True)
+        show(graphs_dir=sys.argv[1], show_graphs=True, analysis=False)
     elif len(sys.argv) == 3:
-        show(graphs_dir=sys.argv[1], initso=sys.argv[2], show_graphs=True)
+        show(graphs_dir=sys.argv[1], initso=sys.argv[2], show_graphs=True, analysis=False)
     elif len(sys.argv) == 4:
-        show(graphs_dir=sys.argv[1], initso=sys.argv[2], initstream=sys.argv[3], show_graphs=True)
+        show(graphs_dir=sys.argv[1], initso=sys.argv[2], initstream=sys.argv[3], show_graphs=True, analysis=False)
     return
 
 if __name__ == '__main__':

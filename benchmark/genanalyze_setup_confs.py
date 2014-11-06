@@ -50,22 +50,25 @@ def main():
                 for k in range(len(su.topologies)):
                     visualization.show_graph({'graph':su.topologies[k].stream_graph}, csvfile="raw."+sys.argv[3], show_graphs=False, prependcsv=[sos,str(j)])
 
-    with open("raw."+sys.argv[3], 'a', newline='') as f:
+    with open("raw."+sys.argv[3], 'r', newline='') as f:
+
         reader1 = csv.reader(f, delimiter=',', quotechar='"')
-        reader2 = csv.reader(f, delimiter=',', quotechar='"')
-        with open(sys.argv[3], 'a', newline='') as f:
-            writer = csv.writer(f, delimiter=',',
+
+        with open(sys.argv[3], 'a', newline='') as f2:
+            writer = csv.writer(f2, delimiter=',',
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for row1 in reader1:
                 found = False
-                for row2 in reader2:
-                    if row1 == row2:
-                        break
-                    if row1[3] == row2[3] and row1[4] == row2[4] and row1[5] == row2[5]:
-                        found = True
-                        break
-                if not found:
-                    writer.writerow(row1)
+                with open("raw."+sys.argv[3], 'r', newline='') as f1:
+                    reader2 = csv.reader(f1, delimiter=',', quotechar='"')
+                    for row2 in reader2:
+                        if row1 == row2:
+                            break
+                        if row1[3] == row2[3] and row1[4] == row2[4] and row1[5] == row2[5]:
+                            found = True
+                            break
+                    if not found:
+                        writer.writerow(row1)
 
     return
 
