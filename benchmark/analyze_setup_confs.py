@@ -1,10 +1,11 @@
+import os
 import sys
 from benchmark import visualization
 from benchmark import setup
 import csv
 
 def main():
-    with open("raw."+sys.argv[3], 'a', newline='') as f:
+    with open(os.path.dirname(sys.argv[3])+"raw."+os.path.basename(sys.argv[3]), 'a', newline='') as f:
         writer = csv.writer(f, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow([
