@@ -1,131 +1,64 @@
-import httplib2
+import os
 import json
-import csv
-import sys
 import time
-import random
-from random import uniform, randrange
-import logging
-from timeit import Timer
-from functools import partial
-from datetime import tzinfo, timedelta, datetime #http://docs.python.org/library/datetime.html
+import sys
 
-deltatime = 5
-ndata = 50
-
-# Your API Key
-API_KEY = 'M2JhMmRkMDEtZTAwZi00ODM5LThmYTktOGU4NjNjYmJmMjc5N2UzNzYwNWItNTc2ZS00MGVlLTgyNTMtNTgzMmJhZjA0ZmIy'
-
-def request(partial_url, method, body):
-	time.sleep(0.5)
-	headers = {
-		'Authorization': self.config['API']['AuthToken'],
-		'Content-Type': 'application/json; charset=UTF-8'
-	}
-	h = httplib2.Http()
-	response, content = h.request(
-		self.config['API']['BaseAddress'] + partial_url,
-		method,
-		body,
-		headers)
-	return response, content.decode('utf-8')
-	
-def send_request(method, url, body='', headers=''):
-
-	headers['Authorization'] = API_KEY 
-	conn = http.client.HTTPConnection(
-		host="localhost",
-      		port=8080,
-	)
-	conn.request(
-		method=method,
-		url=url,
-		body=body,
-		headers=headers
-	)
-
-	#logging.info("###  %s %s  ###" % (method,url))
-	full_response = conn.getresponse()
-
-	response={} # Parse the HTTP response
-	response['body']=full_response.read()
-	response['headers']=full_response.getheaders()
-	response['status']=full_response.status
-	response['reason']=full_response.reason
-	conn.close()
-	logging.info("###  %s %s  ###" % (response['status'],response['reason']))
-	return response
+import httplib2
 
 
+class Sender:
+	def __init__(self, base_url, api_key, total_sus, wait, streams_json):
+		self.base_url = base_url
+		self.api_key = api_key
+		self.total_sus = total_sus
+		self.wait = wait
+		self.streams_json = streams_json
+		return
 
-def updateSensorData(soId, streamId, data):
-	headers = {"Content-Type": "application/json"}
-	response = send_request(
-		method="PUT",
-		url="/%s/streams/%s" %(soId, streamId),
-		body=data,
-		headers=headers
-	)	
+	def request(self, partial_url, method, body):
+		headers = {
+			'Authorization': self.api_key,
+			'Content-Type': 'application/json; charset=UTF-8'
+		}
+		h = httplib2.Http()
+		response, content = h.request(
+			self.base_url + partial_url,
+			method,
+			body,
+			headers)
+		return response, content.decode('utf-8')
 
-	if response['status'] != 202:
-		logging.error("oops, problem posting data. Error: " + str(response['status']))
-		logging.error(response['headers'])
-		logging.error(response['body'])
-	
-	return response	
-
-baseData = """
-{
-    "channels": {
-        "location": {
-		"current-value": "40.12,-71.34"
-	},
-        "temperature": {
-		"current-value": 10
-	} 
-    },
-    "lastUpdate": 1199192925
-}
-"""
+	def send_sus(self):
+		for i in range(self.total_sus):
+			stream = self.streams_json[i % len(self.streams_json)]
+			response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
+											 "{'channels': {'channel0': {'current-value': 1}}, 'lastUpdate':" + time.time() * 1000 + "}")
+			while int(response['status']) != 201:
+				print(content + '\n')
+				response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
+												 "{'channels': {'channel0': {'current-value': 1}}, 'lastUpdate':" + time.time() * 1000 + "}")
+			time.sleep(self.wait)
+		return
 
 
-def newlat():
-  return uniform(43.35,37.37)
+def main():
+	stream_jsons = []
+	if os.path.isdir(sys.argv[1]):
+		for file in os.listdir(sys.argv[1]):
+			json_file = open(file)
+			streams = json.load(json_file)
+			json_file.close()
+			stream_jsons.append(streams)
+	elif os.path.isfile(sys.argv[1]):
+		json_file = open(sys.argv[1])
+		streams = json.load(json_file)
+		json_file.close()
+		stream_jsons.append(streams)
+	for streams in stream_jsons:
+		sender = Sender(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
+		sender.send_sus()
+	return
 
-def newlon():
-  return uniform(-8.2, -0.3)
 
-def newtemp():
-  return uniform(5,40)
-
-f1 = open('SO.id', 'r')
-soId = f1.readline().replace('\n', '')
-print "ID: "+soId
-f1.close()
-
-f2 = open('SO2.id', 'r')
-soId2 = f2.readline().replace('\n', '')
-print "ID: "+soId2
-f2.close()
-
-tmstmp = time.mktime(datetime.now().timetuple())
-for d in range(ndata):
-    sample = json.loads(baseData)
-    sample['channels']['location']['current-value'] =  str(newlat()) + "," + str(newlon())
-    sample['channels']['temperature']['current-value'] = round(newtemp(),2)
-    print tmstmp
-    sample['lastUpdate'] = long(tmstmp)
-    tmstmp = tmstmp + deltatime
-    print sample
-    updateSensorData(soId, 'data', json.dumps(sample))
-    sample['channels']['location']['current-value'] =  str(newlat()) + "," + str(newlon())
-    sample['channels']['temperature']['current-value'] = round(newtemp(),2)
-    print tmstmp
-    sample['lastUpdate'] = long(tmstmp)
-    tmstmp = tmstmp + deltatime
-    print sample
-    updateSensorData(soId2, 'data', json.dumps(sample))
-    #time.sleep(4)
-    
-
-print 'END'
+if __name__ == '__main__':
+	main()
