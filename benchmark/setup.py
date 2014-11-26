@@ -78,9 +78,9 @@ class Topology:
             streams += ['stream' + str(i)]
         if self.deploy:
             response, content = self.request('', 'POST', json.dumps(json_so))
-            if int(response['status']) >= 300:
+            while int(response['status']) != 201:
                 print(content + '\n')
-                return []
+                response, content = self.request('', 'POST', json.dumps(json_so))
             json_content = json.loads(content)
             so_id = json_content['id']
         else:
@@ -187,8 +187,8 @@ class Topology:
         return json_stream
 
     def make_group(self, stream, groups):
-        groups.update({'$'+stream[0]+':'+ stream[1]: {'soIds': [stream[0]], 'stream': stream[1]}})
-        return '$'+stream[0] + ':' + stream[1]
+        groups.update({'$'+stream[0]+'_'+ stream[1]: {'soIds': [stream[0]], 'stream': stream[1]}})
+        return '$'+stream[0] + '_' + stream[1]
 
     def make_cstreams(self, init_streams, existing_groups):
         num_cstreams = round(eval(self.config['TOPOLOGIES']['CompositeStreams']))
@@ -386,7 +386,7 @@ class Topology:
 
 
 def main():
-    setup = Setup('../benchmark.ini', False)
+    setup = Setup('../benchmark.ini', True)
     setup.write_initial_streams(setup.config['TOPOLOGIES']['InitialStreamsFile'])
 
     for i in range(len(setup.topologies)):
