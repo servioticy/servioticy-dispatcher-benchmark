@@ -1,4 +1,3 @@
-import time
 import configparser
 import json
 import random
@@ -6,6 +5,7 @@ import uuid
 
 import networkx as nx
 import httplib2
+
 
 class Setup:
     def __init__(self, config_path, deploy=True, sos=None, operands=None):
@@ -371,7 +371,6 @@ class Topology:
 
 
     def request(self, partial_url, method, body):
-        time.sleep(0.5)
         headers = {
             'Authorization': self.config['API']['AuthToken'],
             'Content-Type': 'application/json; charset=UTF-8'
