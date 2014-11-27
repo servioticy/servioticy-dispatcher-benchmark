@@ -29,15 +29,16 @@ class Sender:
         return response, content.decode('utf-8')
 
     def send_sus(self):
-        for i in range(self.total_sus):
+        for i in range(int(self.total_sus)):
             stream = self.streams_json[i % len(self.streams_json)]
+            su = "{\"channels\": {\"channel0\": {\"current-value\": 1}}, \"lastUpdate\":" + str(int(time.time() * 1000)) + "}"
             response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
-                                             "{'channels': {'channel0': {'current-value': 1}}, 'lastUpdate':" + time.time() * 1000 + "}")
-            while int(response['status']) != 201:
+                                             su)
+            while int(response['status']) != 202:
                 print(content + '\n')
                 response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
-                                                 "{'channels': {'channel0': {'current-value': 1}}, 'lastUpdate':" + time.time() * 1000 + "}")
-            time.sleep(self.wait)
+                                                 su)
+            time.sleep(float(self.wait))
         return
 
 
@@ -45,7 +46,7 @@ def main():
     stream_jsons = []
     if os.path.isdir(sys.argv[1]):
         for file in os.listdir(sys.argv[1]):
-            json_file = open(file)
+            json_file = open(sys.argv[1]+'/'+file)
             streams = json.load(json_file)
             json_file.close()
             stream_jsons.append(streams)
@@ -57,6 +58,7 @@ def main():
     for streams in stream_jsons:
         sender = Sender(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
         sender.send_sus()
+        time.sleep(10)
     return
 
 
