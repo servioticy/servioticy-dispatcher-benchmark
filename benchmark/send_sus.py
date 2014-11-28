@@ -59,7 +59,7 @@ def main():
     for streams in stream_jsons:
         sender = Sender(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
         sender.send_sus()
-        time.sleep(10)
+        time.sleep(2)
     return
 
 
