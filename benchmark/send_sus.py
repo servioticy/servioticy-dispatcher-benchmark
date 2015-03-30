@@ -38,6 +38,7 @@ class Sender:
                 print(content + '\n')
                 response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
                                                  su)
+                time.sleep(float(self.wait))
             time.sleep(float(self.wait))
         return
 
