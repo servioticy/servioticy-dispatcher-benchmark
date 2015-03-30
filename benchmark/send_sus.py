@@ -29,8 +29,7 @@ class Sender:
         return response, content.decode('utf-8')
 
     def send_sus(self):
-        for i in range(int(self.total_sus)):
-            stream = self.streams_json[i % len(self.streams_json)]
+        for stream in self.streams_json:
             su = "{\"channels\": {\"channel0\": {\"current-value\": 1}}, \"lastUpdate\":" + str(int(time.time() * 1000)) + "}"
             response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
                                              su)
@@ -59,7 +58,7 @@ def main():
     for streams in stream_jsons:
         sender = Sender(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
         sender.send_sus()
-        time.sleep(10)
+        time.sleep(0)
     return
 
 

@@ -8,7 +8,7 @@ import httplib2
 
 
 class Setup:
-    def __init__(self, config_path, deploy=True, sos=None, operands=None):
+    def __init__(self, config_path, deploy=True, sos=None, operands=None, isos=None):
         self.topologies = []
         self.config = configparser.ConfigParser()
         self.initial_streams = []
@@ -19,7 +19,7 @@ class Setup:
         if num_topologies < 1:
             num_topologies = 1
         for i in range(num_topologies):
-            self.topologies.append(Topology(config_path, deploy, sos, operands))
+            self.topologies.append(Topology(config_path, deploy, sos, operands, isos))
             self.initial_streams += self.topologies[-1].initial_streams
         return
 
@@ -31,7 +31,7 @@ class Setup:
         return
 
 class Topology:
-    def __init__(self, config_path, deploy=True, sos=None, operands=None):
+    def __init__(self, config_path, deploy=True, sos=None, operands=None, isos=None):
         self.config = configparser.ConfigParser()
         self.initial_streams = []
         self.streams = []
@@ -48,7 +48,7 @@ class Topology:
 
         self.config.read(config_path)
 
-        num_initsos = round(eval(self.config['TOPOLOGIES']['InitialSOs']))
+        num_initsos = round(eval(self.config['TOPOLOGIES']['InitialSOs'] if isos == None else isos))
         if num_initsos < 0:
             num_initsos = 0
         for i in range(num_initsos):
