@@ -255,17 +255,19 @@ class Topology:
                 found = True
                 if len(streams + groups) == 0:
                     break
-                sel_operand = self.det_operands_index = self.det_operands_index + j % len(streams + groups)
+                sel_operand = self.det_operands_index % len(streams + groups)
+                self.det_operands_index = self.det_operands_index + 1 % len(streams + groups)
                 if sel_operand < len(groups):
                     for dependency in self.dependencies[sel_operand]:
                         if dependency in local_dependencies:
-                            groups.pop(sel_operand)
+                            #groups.pop(sel_operand)
+                            self.det_operands_index = self.det_operands_index
                             found = False
                             break
                     if not found:
                         continue
                     local_dependencies.extend(self.dependencies[sel_operand])
-                    groupid = self.make_group(groups.pop(sel_operand), existing_groups)
+                    groupid = self.make_group(groups[sel_operand], existing_groups)
                     sel_groups += [groupid]
                 else:
                     sel_operand = sel_operand - len(groups)
@@ -274,20 +276,20 @@ class Topology:
 
                     for dependency in new_dependencies[sel_operand]:
                         if dependency in local_dependencies:
-                            streams.pop(sel_operand)
+                            #streams.pop(sel_operand)
                             found = False
                             break
                     if not found:
                         continue
                     local_dependencies.extend(new_dependencies[sel_operand])
-                    sel_streams += [streams.pop(sel_operand)]
+                    sel_streams += [streams[sel_operand]]
         self.det_operands_index = self.det_operands_index + 1 % len(streams + groups)
         return sel_groups, sel_streams, local_dependencies
 
     def distribute_operands(self, new_streams, new_dependencies, num_operands, distribution, existing_groups):
         # The operands can be repeated
         if distribution == 'deterministic':
-            return self.distribute_operands_det(new_streams, num_operands, existing_groups)
+            return self.distribute_operands_det(new_streams, new_dependencies, num_operands, existing_groups)
         sel_streams = []
         sel_groups = []
         local_dependencies = []

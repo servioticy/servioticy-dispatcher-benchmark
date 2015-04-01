@@ -173,7 +173,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             simple_paths.extend(sorted(all_simple_paths_len(G, sources=sources)))
             graph_info = [
                 str(len(G.node)),
-                str(len(simple_paths)),
+                #str(len(simple_paths)),
                 str(nx.density(G.to_undirected())),
                 str(G.number_of_edges()),
                 str(nx.node_connectivity(G.to_undirected())),
@@ -188,10 +188,10 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
                 str(statistics.stdev(out_degrees)),
                 str(nx.is_directed_acyclic_graph(G)),
                 # str(num_paths(G,sinks)),
-                str(simple_paths[0] if len(simple_paths) > 0 else 0),
+                #str(simple_paths[0] if len(simple_paths) > 0 else 0),
                 str(simple_paths[-1] if len(simple_paths) > 0 else 0),
-                str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
-                str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
+                #str(statistics.mean(simple_paths) if len(simple_paths) > 0 else 0),
+                #str(statistics.stdev(simple_paths) if len(simple_paths) > 1 else 0),
                 str(nx.degree_assortativity_coefficient(G, x="in", y="in")),
                 str(nx.degree_assortativity_coefficient(G, x="out", y="out"))
             ]
@@ -204,7 +204,7 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             print()
             info_pos = iter(graph_info)
             print("Nodes: " + next(info_pos))
-            print("Paths (from a source to a sink): " + next(info_pos))
+            #print("Paths (from a source to a sink): " + next(info_pos))
             print("Density (DAG): " + next(info_pos))
             print("Edges: " + next(info_pos))
             print("Connectivity (weak): " + next(info_pos))
@@ -220,10 +220,10 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             print("DAG: " + next(info_pos))
             # print("Paths (from a source to a sink): " + next(info_pos))
             if len(simple_paths) > 0:
-                print("Vertex per path min: " + next(info_pos))
-                print("Vertex per path max: " + next(info_pos))
-                print("Vertex per path mean: " + next(info_pos))
-                print("Vertex per path standard deviation: " + next(info_pos))
+            #     print("Vertex per path min: " + next(info_pos))
+                 print("Vertex per path max: " + next(info_pos))
+            #     print("Vertex per path mean: " + next(info_pos))
+            #     print("Vertex per path standard deviation: " + next(info_pos))
             print("Degree in-assortativity coefficient: " + next(info_pos))
             print("Degree out-assortativity coefficient: " + next(info_pos))
             print()
@@ -251,7 +251,7 @@ def show(graphs_dir, initso=None, initstream=None, csvfile=None, show_graphs=Tru
 
 def main():
     if len(sys.argv) == 2:
-        show(graphs_dir=sys.argv[1], show_graphs=True, analysis=False)
+        show(graphs_dir=sys.argv[1], show_graphs=True, analysis=True)
     elif len(sys.argv) == 3:
         show(graphs_dir=sys.argv[1], initso=sys.argv[2], show_graphs=True, analysis=False)
     elif len(sys.argv) == 4:

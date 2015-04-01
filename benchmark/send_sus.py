@@ -55,10 +55,11 @@ def main():
         streams = json.load(json_file)
         json_file.close()
         stream_jsons.append(streams)
-    for streams in stream_jsons:
-        sender = Sender(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
-        sender.send_sus()
-        time.sleep(0)
+    for i in range(int(sys.argv[4])):
+        for streams in stream_jsons:
+            sender = Sender(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
+            sender.send_sus()
+            time.sleep(0)
     return
 
 
