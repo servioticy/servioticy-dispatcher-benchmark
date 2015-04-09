@@ -94,6 +94,15 @@ class Topology:
             self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
 
             self.stream_graph.add_node(so_id + ":" + stream)
+            su = {}
+            su['channels'] = {}
+            su['lastUpdate'] = 0
+            # Initialize the streams
+            for i in range(len(json_so['streams'][stream])):
+                su['channels']['channel'+str(i)] = {'current-value': 0}
+            response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su))
+            while int(response['status']) != 201:
+                response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su))
         return
 
     def put_so(self):
