@@ -94,15 +94,16 @@ class Topology:
             self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
 
             self.stream_graph.add_node(so_id + ":" + stream)
-            su = {}
-            su['channels'] = {}
-            su['lastUpdate'] = 0
             # Initialize the streams
-            for i in range(len(json_so['streams'][stream])):
-                su['channels']['channel'+str(i)] = {'current-value': 0}
-            response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su))
-            while int(response['status']) != 201:
+            if self.deploy:
+                su = {}
+                su['channels'] = {}
+                su['lastUpdate'] = 1
+                for i in range(len(json_so['streams'][stream]['channels'])):
+                    su['channels']['channel'+str(i)] = {'current-value': 0}
                 response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su))
+                while int(response['status']) != 202:
+                    response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su))
         return
 
     def put_so(self):
@@ -146,12 +147,32 @@ class Topology:
         for initial_stream_id in initial_stream_ids:
             self.initial_streams += [[so_id, initial_stream_id]]
             self.stream_graph.add_node(so_id + ":" + initial_stream_id)
+            # Initialize the streams
+            if self.deploy:
+                su = {}
+                su['channels'] = {}
+                su['lastUpdate'] = 1
+                for i in range(len(json_so['streams'][initial_stream_id]['channels'])):
+                    su['channels']['channel'+str(i)] = {'current-value': 0}
+                response, content = self.request(so_id+'/streams/'+initial_stream_id, 'PUT', json.dumps(su))
+                while int(response['status']) != 202:
+                    response, content = self.request(so_id+'/streams/'+initial_stream_id, 'PUT', json.dumps(su))
         stream_keys = list(json_so['streams'].keys())
         stream_keys = sorted(stream_keys)
         for i in range(len(stream_keys)):
             stream_id = stream_keys[i]
             self.streams += [[so_id, stream_id]]
             self.stream_graph.add_node(so_id + ":" + stream_id)
+            # Initialize the streams
+            if self.deploy:
+                su = {}
+                su['channels'] = {}
+                su['lastUpdate'] = 1
+                for i in range(len(json_so['streams'][stream_id]['channels'])):
+                    su['channels']['channel'+str(i)] = {'current-value': 0}
+                response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
+                while int(response['status']) != 202:
+                    response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
             self.dependencies[len(self.streams)-1] = []
             if stream_id in new_dependencies:
                 for new_dependency in new_dependencies[stream_id]:
