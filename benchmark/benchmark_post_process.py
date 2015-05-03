@@ -13,7 +13,7 @@ def main():
             for row in reader1:
                 key = ','.join(row[5:])
 
-                if not (row[3] == 'no-group' or row[3] == 'no-stream'):
+                if not (row[3] == 'no-subscription' or row[3] == 'no-stream'):
                     writer.writerow(row)
                     remove_old_active_path(active_paths, key)
                     continue

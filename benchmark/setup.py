@@ -129,6 +129,7 @@ class Topology:
         # CStreams
         groups = {}
         input_sets, cstreams, new_dependencies = self.make_cstreams(initial_stream_ids, groups)
+        self.dependencies.update(new_dependencies)
         # Groups
         json_so['groups'] = groups
         json_so['streams'] = dict(
@@ -168,21 +169,21 @@ class Topology:
                 su = {}
                 su['channels'] = {}
                 su['lastUpdate'] = 1
-                for i in range(len(json_so['streams'][stream_id]['channels'])):
-                    su['channels']['channel'+str(i)] = {'current-value': 0}
+                for j in range(len(json_so['streams'][stream_id]['channels'])):
+                    su['channels']['channel'+str(j)] = {'current-value': 0}
                 response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
                 while int(response['status']) != 202:
                     response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
-            self.dependencies[len(self.streams)-1] = []
-            if stream_id in new_dependencies:
-                for new_dependency in new_dependencies[stream_id]:
-                    if new_dependency in stream_keys:
-                        stream_pos = len(self.streams)-(i+1) + stream_keys.index(new_dependency)
-                        self.dependencies[len(self.streams)-1].append(stream_pos)
-                    else:
-                        self.dependencies[len(self.streams)-1].append(new_dependency)
-            else:
-                self.dependencies[len(self.streams)-1].append(len(self.streams)-1)
+            # self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
+            # if stream_id in new_dependencies:
+            #     for new_dependency in new_dependencies[stream_id]:
+            #         if new_dependency in stream_keys:
+            #             stream_pos = len(self.streams)-(i+1) + stream_keys.index(new_dependency)
+            #             self.dependencies[len(self.streams)-1].append(stream_pos)
+            #         else:
+            #             self.dependencies[len(self.streams)-1].append(new_dependency)
+            # else:
+            #     self.dependencies[len(self.streams)-1].append(len(self.streams)-1)
 
 
         for k in json_so['groups'].keys():
@@ -231,9 +232,9 @@ class Topology:
         new_dependencies = {}
 
         for i in range(num_cstreams):
-            input_sets['cstream' + str(i)], cstreams['cstream' + str(i)], local_dependencies = self.make_cstream(new_streams, new_dependencies, existing_groups)
-            new_streams += ['cstream' + str(i)]
-            new_dependencies['cstream' + str(i)] = local_dependencies
+            input_sets['xstream' + str(i)], cstreams['xstream' + str(i)], local_dependencies = self.make_cstream(new_streams, new_dependencies, existing_groups)
+            new_streams += ['xstream' + str(i)]
+            new_dependencies[len(self.streams) + len(new_streams) - 1] = local_dependencies
 
         return input_sets, cstreams, new_dependencies
 
@@ -322,18 +323,19 @@ class Topology:
             return self.distribute_operands_det(new_streams, new_dependencies, num_operands, existing_groups)
         sel_streams = []
         sel_groups = []
-        local_dependencies = []
 
         nm = num_operands
-        groups = list(self.streams)
-        streams = list(new_streams)
+        groups = list(range(len(self.streams)))
+        # local_streams = range(new_streams)
+        operands = list(range(len(self.streams + new_streams)))
+        local_dependencies = [len(operands)]
         for j in range(nm):
-            if len(streams + groups) == 0:
+            if len(operands) == 0:
                 break
             found = False
             while not found:
                 found = True
-                if len(streams + groups) == 0:
+                if len(operands) == 0:
                     break
                 sel_operand = round(eval(distribution))
                 # if sel_operand < 0 or sel_operand >= len(operands):
@@ -342,32 +344,26 @@ class Topology:
                     sel_operand = 0
                 elif sel_operand > 1:
                     sel_operand = 1
-                sel_operand = round(sel_operand * (len(streams + groups) - 1))
+                sel_operand = round(sel_operand * (len(operands) - 1))
+
+                if sel_operand not in self.dependencies.keys():
+                    self.dependencies[operands[sel_operand]] = [operands[sel_operand]]
+                for dependency in self.dependencies[operands[sel_operand]]:
+                    if dependency in local_dependencies:
+                        operands.pop(sel_operand)
+                        found = False
+                        break
+                if not found:
+                    continue
+                local_dependencies.extend(self.dependencies[operands[sel_operand]])
+
                 if sel_operand < len(groups):
-                    for dependency in self.dependencies[sel_operand]:
-                        if dependency in local_dependencies:
-                            groups.pop(sel_operand)
-                            found = False
-                            break
-                    if not found:
-                        continue
-                    local_dependencies.extend(self.dependencies[sel_operand])
-                    groupid = self.make_group(groups.pop(sel_operand), existing_groups)
+                    groups.pop(sel_operand)
+                    groupid = self.make_group(self.streams[operands.pop(sel_operand)], existing_groups)
                     sel_groups += [groupid]
                 else:
-                    sel_operand = sel_operand - len(groups)
-                    if streams[sel_operand] not in new_dependencies.keys():
-                        new_dependencies[streams[sel_operand]] = [streams[sel_operand]]
+                    sel_streams += [operands.pop(sel_operand)]
 
-                    for dependency in new_dependencies[streams[sel_operand]]:
-                        if dependency in local_dependencies:
-                            streams.pop(sel_operand)
-                            found = False
-                            break
-                    if not found:
-                        continue
-                    local_dependencies.extend(new_dependencies[streams[sel_operand]])
-                    sel_streams += [streams.pop(sel_operand)]
         return sel_groups, sel_streams, local_dependencies
 
     def make_channel(self, operands):
@@ -417,7 +413,7 @@ class Topology:
 
 
 def main():
-    setup = Setup('../benchmark.ini', True)
+    setup = Setup('../benchmark.ini', False)
     setup.write_initial_streams(setup.config['TOPOLOGIES']['InitialStreamsFile'])
 
     for i in range(len(setup.topologies)):
