@@ -346,7 +346,7 @@ class Topology:
                     sel_operand = 1
                 sel_operand = round(sel_operand * (len(operands) - 1))
 
-                if sel_operand not in self.dependencies.keys():
+                if operands[sel_operand] not in self.dependencies.keys():
                     self.dependencies[operands[sel_operand]] = [operands[sel_operand]]
                 for dependency in self.dependencies[operands[sel_operand]]:
                     if dependency in local_dependencies:
@@ -362,7 +362,8 @@ class Topology:
                     groupid = self.make_group(self.streams[operands.pop(sel_operand)], existing_groups)
                     sel_groups += [groupid]
                 else:
-                    sel_streams += [operands.pop(sel_operand)]
+                    sel_streams += [new_streams[operands.pop(sel_operand)-len(self.streams)]]
+                    print("something")
 
         return sel_groups, sel_streams, local_dependencies
 
