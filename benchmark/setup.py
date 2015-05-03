@@ -363,7 +363,6 @@ class Topology:
                     sel_groups += [groupid]
                 else:
                     sel_streams += [new_streams[operands.pop(sel_operand)-len(self.streams)]]
-                    print("something")
 
         return sel_groups, sel_streams, local_dependencies
 
