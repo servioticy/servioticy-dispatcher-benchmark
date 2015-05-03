@@ -270,7 +270,7 @@ class Topology:
 
         return input_sets, channels, local_dependencies
 
-
+    # DEPENDENCY CONTROL DOES NOT WORK, FIX WITH THE NON-DETERMINISTIC EXAMPLE
     def distribute_operands_det(self, new_streams, new_dependencies, num_operands, existing_groups):
         sel_streams = []
         sel_groups = []
