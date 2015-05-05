@@ -159,16 +159,33 @@ def show_graph(graphs, initso=None, initstream=None, csvfile=None, show_graphs=T
             nx.draw_spring(G, with_labels=True, node_color=node_colors)
 
         in_degrees = []
+        in_degrees_dict = {}
         for node in G.nodes():
+            in_degrees_dict[G.node[node]['label']] = G.in_degree(node)
             in_degrees.append(G.in_degree(node))
             in_degrees = sorted(in_degrees)
 
         out_degrees = []
+        out_degrees_dict = {}
         for node in G.nodes():
+            out_degrees_dict[G.node[node]['label']] = G.out_degree(node)
             out_degrees.append(G.out_degree(node))
             out_degrees = sorted(out_degrees)
 
-        if analysis :
+        if analysis:
+            with open(graph_key + "in_degree.csv", 'a', newline='') as f1:
+                writer = csv.writer(f1, delimiter=',',
+                                    quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                for key in sorted(in_degrees_dict.keys()):
+                    row = [key, in_degrees_dict[key]]
+                    writer.writerow(row)
+
+            with open(graph_key + "out_degree.csv", 'a', newline='') as f2:
+                writer = csv.writer(f2, delimiter=',',
+                                    quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                for key in sorted(out_degrees_dict.keys()):
+                    row = [key, out_degrees_dict[key]]
+                    writer.writerow(row)
             simple_paths = []
             simple_paths.extend(sorted(all_simple_paths_len(G, sources=sources)))
             graph_info = [

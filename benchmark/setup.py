@@ -413,7 +413,7 @@ class Topology:
 
 
 def main():
-    setup = Setup('../benchmark.ini', False)
+    setup = Setup('../benchmark.ini', True)
     setup.write_initial_streams(setup.config['TOPOLOGIES']['InitialStreamsFile'])
 
     for i in range(len(setup.topologies)):
