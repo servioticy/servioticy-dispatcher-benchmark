@@ -32,40 +32,27 @@ class Sender:
         h = httplib2.Http()
         h.add_credentials('Administrator', 'masterautonomic')
         for stream in self.streams_json:
-            time.sleep(float(self.wait))
-            responseCB, contentCB  = h.request(
-                'http://minerva-11:8091/pools/default/buckets/soupdates',
-                'GET'
-                )
-            contentCB = json.loads(contentCB.decode('utf-8'))
-            while contentCB['basicStats']['opsPerSec'] != 0 or int(responseCB['status']) != 200:
+            sent = False
+            while not sent:
                 time.sleep(float(self.wait))
-                responseCB, contentCB  = h.request(
-                    'http://minerva-11:8091/pools/default/buckets/soupdates',
-                    'GET'
-                )
-                contentCB = json.loads(contentCB.decode('utf-8'))
-            su = "{\"channels\": {\"channel0\": {\"current-value\": 1}}, \"lastUpdate\":" + str(int(time.time() * 1000)) + "}"
-            response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
-                                             su)
-            while int(response['status']) != 202:
-                time.sleep(float(self.wait))
-                responseCB, contentCB  = h.request(
-                    'http://minerva-11:8091/pools/default/buckets/soupdates',
-                    'GET'
-                )
-                contentCB = json.loads(contentCB.decode('utf-8'))
-                while contentCB['basicStats']['opsPerSec'] != 0 or int(responseCB['status']) != 200:
-                    time.sleep(float(self.wait))
+                counter = 0
+                while counter != 5:
                     responseCB, contentCB  = h.request(
                         'http://minerva-11:8091/pools/default/buckets/soupdates',
                         'GET'
                     )
                     contentCB = json.loads(contentCB.decode('utf-8'))
-                print(content + '\n')
+                    if contentCB['basicStats']['opsPerSec'] != 0 or int(responseCB['status']) != 200:
+                        counter = 0
+                    else:
+                        counter=1+counter
+                    time.sleep(0.05)
+                su = "{\"channels\": {\"channel0\": {\"current-value\": 1}}, \"lastUpdate\":" + str(int(time.time() * 1000)) + "}"
                 response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
                                                  su)
-                time.sleep(float(self.wait))
+                if int(response['status']) != 202:
+                    continue
+                sent = True
         return
 
 
