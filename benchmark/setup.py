@@ -5,7 +5,7 @@ import uuid
 
 import networkx as nx
 import httplib2
-
+from random import randint
 
 class Setup:
     def __init__(self, config_path, deploy=True, sos=None, operands=None, isos=None):
@@ -77,33 +77,23 @@ class Topology:
             json_so['streams']['stream' + str(i)] = json_stream
             streams += ['stream' + str(i)]
         if self.deploy:
-            response, content = self.request('', 'POST', json.dumps(json_so))
-            while int(response['status']) != 201:
-                print(content + '\n')
-                response, content = self.request('', 'POST', json.dumps(json_so))
-            json_content = json.loads(content)
-            so_id = json_content['id']
+            so_id, api_token = self.post_so(json.dumps(json_so))
+
         else:
             so_id = str(uuid.uuid4())
+            api_token = "none"
 
         self.so_graph.add_node(so_id)
 
         for stream in streams:
-            self.initial_streams += [[so_id, stream]]
-            self.streams += [[so_id, stream]]
+            self.initial_streams += [[so_id, stream, api_token]]
+            self.streams += [[so_id, stream, api_token]]
             self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
 
             self.stream_graph.add_node(so_id + ":" + stream)
             # Initialize the streams
             if self.deploy:
-                su = {}
-                su['channels'] = {}
-                su['lastUpdate'] = 1
-                for i in range(len(json_so['streams'][stream]['channels'])):
-                    su['channels']['channel'+str(i)] = {'current-value': 0}
-                response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su))
-                while int(response['status']) != 202:
-                    response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su))
+                self.put_initial_su(so_id, stream, api_token, json_so)
         return
 
     def put_so(self):
@@ -135,34 +125,24 @@ class Topology:
         json_so['streams'] = dict(
             list(json_so['streams'].items()) + list(cstreams.items()))
         if self.deploy:
-            response, content = self.request('', 'POST', json.dumps(json_so))
-            if int(response['status']) >= 300:
-                print(content + '\n')
-                return [], []
-            json_content = json.loads(content)
-            so_id = json_content['id']
+            so_id, api_token = self.post_so(json.dumps(json_so))
         else:
             so_id = str(uuid.uuid4())
+            api_token = 'none'
 
         self.so_graph.add_node(so_id)
         for initial_stream_id in initial_stream_ids:
-            self.initial_streams += [[so_id, initial_stream_id]]
+            self.initial_streams += [[so_id, initial_stream_id, api_token]]
             self.stream_graph.add_node(so_id + ":" + initial_stream_id)
             # Initialize the streams
             if self.deploy:
-                su = {}
-                su['channels'] = {}
-                su['lastUpdate'] = 1
-                for i in range(len(json_so['streams'][initial_stream_id]['channels'])):
-                    su['channels']['channel'+str(i)] = {'current-value': 0}
-                response, content = self.request(so_id+'/streams/'+initial_stream_id, 'PUT', json.dumps(su))
-                while int(response['status']) != 202:
-                    response, content = self.request(so_id+'/streams/'+initial_stream_id, 'PUT', json.dumps(su))
+                self.put_initial_su(so_id, initial_stream_id, api_token, json_so)
+
         stream_keys = list(json_so['streams'].keys())
         stream_keys = sorted(stream_keys)
         for i in range(len(stream_keys)):
             stream_id = stream_keys[i]
-            self.streams += [[so_id, stream_id]]
+            self.streams += [[so_id, stream_id, api_token]]
             self.stream_graph.add_node(so_id + ":" + stream_id)
             # Initialize the streams
             if self.deploy:
@@ -171,9 +151,9 @@ class Topology:
                 su['lastUpdate'] = 1
                 for j in range(len(json_so['streams'][stream_id]['channels'])):
                     su['channels']['channel'+str(j)] = {'current-value': 0}
-                response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
-                while int(response['status']) != 202:
-                    response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
+                # response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
+                # while int(response['status']) != 202:
+                #     response, content = self.request(so_id+'/streams/'+stream_id, 'PUT', json.dumps(su))
             # self.dependencies[len(self.streams)-1] = [len(self.streams)-1]
             # if stream_id in new_dependencies:
             #     for new_dependency in new_dependencies[stream_id]:
@@ -218,8 +198,8 @@ class Topology:
         return json_stream
 
     def make_group(self, stream, groups):
-        groups.update({'$'+stream[0]+'_'+ stream[1]: {'soIds': [stream[0]], 'stream': stream[1]}})
-        return '$'+stream[0] + '_' + stream[1]
+        groups.update({'A'+stream[0]+ stream[1]: {'soIds': [stream[0]], 'stream': stream[1]}})
+        return 'A'+stream[0] + stream[1]
 
     def make_cstreams(self, init_streams, existing_groups):
         num_cstreams = round(eval(self.config['TOPOLOGIES']['CompositeStreams']))
@@ -366,26 +346,101 @@ class Topology:
 
         return sel_groups, sel_streams, local_dependencies
 
+
+    # WOLFRAM CODE
+
+    def generateCodeString(self, variableArray, withRandom):
+        ret = ""
+        operationsSimple = ["+","-", "*","/", ]
+        operationsBinary = ["&", "|", "^", "<<", ">>"]
+        operationsString = ["+"]
+        operationsPost = ["Math.min","Math.max"]
+        operationsPostOne = ["Math.round","Math.ceil","Math.floor","Math.sqrt","Math.abs"]
+        operations = [operationsSimple,operationsSimple,operationsBinary, operationsString,operationsPost,operationsPostOne]
+        OPERATIONPOST_pos = 4
+        if withRandom:
+            first = True
+            i = 0
+            while i < len(variableArray):
+                #for s in variableArray:
+                currentElement = self.getThinkToAdd(variableArray, i, operations, OPERATIONPOST_pos)
+                if first == False:
+                    opSet = self.getOperationSet(0, OPERATIONPOST_pos - 1, operations)
+                    # Get random number to select the operation of a set
+                    n = len(opSet)
+                    randOpPos = randint(0,n-1)
+                    # Add operation
+                    ret += opSet[randOpPos]
+                # Add variable
+                ret += currentElement
+                first = False
+                i = i +1
+            return ret
+        else:
+            first = True
+            for s in variableArray:
+                if first == False:
+                    ret += "+"
+                ret += s
+                first = False
+            return ret
+
+
+    def getOperationSet(self, start, stop, operations):
+        if start < 0:
+            start = 0
+        if stop > len(operations):
+            stop = len(operations)
+        randOpSet = randint(start,stop)
+        return operations[randOpSet]
+
+
+    def getThinkToAdd(self, variableArray, i, operations, OPERATIONPOST_pos):
+        ret = ""
+        # Select the set of operations
+        randOpSet = randint(0,OPERATIONPOST_pos + 1)
+        opSet =  operations[randOpSet]
+        # Add Math operations if necessary
+        if randOpSet == OPERATIONPOST_pos:
+            # Get random number to select the operation of a set
+            n = len(opSet)
+            randOpPos = randint(0,n-1) # select the operator in the set
+            randNumOfParameters = len(variableArray)-1 #randint(i, len(variableArray)-1)
+            ret =  opSet[randOpPos] + "(" + variableArray[i]
+            i = i+1
+            while i < randNumOfParameters:
+                ret = ret + "," + variableArray[i]
+                i = i +1
+            ret = ret + ")"
+            opSet = self.getOperationSet(0,OPERATIONPOST_pos -1, operations)
+        elif randOpSet == OPERATIONPOST_pos +1:
+            # Get random number to select the operation of a set
+            n = len(opSet)
+            randOpPos = randint(0,n-1)
+            ret = opSet[randOpPos] + "(" + variableArray[i] + ")"
+            opSet = self.getOperationSet(0,OPERATIONPOST_pos -1, operations)
+        else:
+            ret = variableArray[i]
+        return ret
+
+    # END WOLFRAM CODE
+
     def make_channel(self, operands):
-        ms = round(eval(self.config['TOPOLOGIES']['CurrentValueMS']))
-        if ms < 0:
-            ms = 0
         json_file = open('./jsons/channel.json')
         json_channel = json.load(json_file)
         json_file.close()
 
-        json_channel['current-value'] = self.make_function_header(operands) + '{'
         # filter
         filter_prob = round(eval(self.config['TOPOLOGIES']['FilterProb']))
         if filter_prob < 0: filter_prob = 0
         elif filter_prob > 1: filter_prob = 1
-        json_channel['current-value'] += 'if(Math.random() < ' + str(filter_prob) + '){return null;}'
-        json_channel['current-value'] += 'var start = new Date().getTime();for(var i=0;i<1e7;i++){if((new Date().getTime()-start)>' + str(
-            ms) + '){break;}} return 0'
 
+
+        sel_operands = []
         for operand in operands:
-            json_channel['current-value'] += '+' + operand + '.channels.channel0[\'current-value\']'
-        json_channel['current-value'] += ';}'
+            sel_operands.append('{$' + operand + '.channels.channel0.current-value}');
+        # json_channel['current-value'] += ';'
+        json_channel['current-value'] = self.generateCodeString(sel_operands, True)
 
         return json_channel
 
@@ -397,12 +452,35 @@ class Topology:
 
         return header[:-1] + ')'
 
-
-    def request(self, partial_url, method, body):
+    def post_so(self, so):
         headers = {
             'Authorization': self.config['API']['AuthToken'],
             'Content-Type': 'application/json; charset=UTF-8'
         }
+        response, content = self.request('', 'POST', so, headers)
+        while int(response['status']) != 201:
+            print(content + '\n')
+            response, content = self.request('', 'POST', so, headers)
+        json_content = json.loads(content)
+        return json_content['id'], json_content['api_token']
+
+    def put_initial_su(self, so_id, stream, token, json_so):
+        headers = {
+            'Authorization': token,
+            'Content-Type': 'application/json; charset=UTF-8'
+        }
+        su = {}
+        su['channels'] = {}
+        su['lastUpdate'] = 1
+        for i in range(len(json_so['streams'][stream]['channels'])):
+            su['channels']['channel'+str(i)] = {'current-value': 0}
+        response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su), headers)
+        while int(response['status']) != 202:
+            response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su), headers)
+        return
+
+    def request(self, partial_url, method, body, headers):
+
         h = httplib2.Http()
         response, content = h.request(
             self.config['API']['BaseAddress'] + partial_url,
