@@ -441,7 +441,7 @@ class Topology:
         for operand in operands:
             sel_operands.append('{$' + operand + '.channels.channel0.current-value}');
         # json_channel['current-value'] += ';'
-        json_channel['current-value'] = self.generateCodeString(sel_operands, True)
+        json_channel['current-value'] = self.generateCodeString(sel_operands, self.config['TOPOLOGIES']['RandomOperands'])
 
         return json_channel
 
