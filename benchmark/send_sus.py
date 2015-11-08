@@ -8,9 +8,8 @@ import httplib2
 
 
 class Sender:
-    def __init__(self, config_path, base_url, api_key, total_sus, wait, streams_json):
+    def __init__(self, config_path, base_url, total_sus, wait, streams_json):
         self.base_url = base_url
-        self.api_key = api_key
         self.total_sus = total_sus
         self.wait = wait
         self.streams_json = streams_json
@@ -18,9 +17,9 @@ class Sender:
         self.config.read(config_path)
         return
 
-    def request(self, partial_url, method, body):
+    def request(self, partial_url, key, method, body):
         headers = {
-            'Authorization': self.api_key,
+            'Authorization': key,
             'Content-Type': 'application/json; charset=UTF-8'
         }
         h = httplib2.Http()
@@ -51,7 +50,7 @@ class Sender:
                         counter=1+counter
                     time.sleep(0.05)
                 su = "{\"channels\": {\"channel0\": {\"current-value\": 1}}, \"lastUpdate\":" + str(int(time.time() * 1000)) + "}"
-                response, content = self.request('/' + stream[0] + '/streams/' + stream[1], 'PUT',
+                response, content = self.request('/' + stream[0] + '/streams/' + stream[1], stream[2], 'PUT',
                                                  su)
                 if int(response['status']) != 202:
                     continue
@@ -76,7 +75,7 @@ def main():
         stream_jsons.append(streams)
     for i in range(int(sys.argv[4])):
         for streams in stream_jsons:
-            sender = Sender('../benchmark.ini', sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
+            sender = Sender('../benchmark.ini', sys.argv[2], sys.argv[3], sys.argv[4], streams)
             sender.send_sus()
             time.sleep(0)
     return
