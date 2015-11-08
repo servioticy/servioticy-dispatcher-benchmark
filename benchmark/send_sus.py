@@ -1,3 +1,4 @@
+import configparser
 import os
 import json
 import time
@@ -7,12 +8,14 @@ import httplib2
 
 
 class Sender:
-    def __init__(self, base_url, api_key, total_sus, wait, streams_json):
+    def __init__(self, config_path, base_url, api_key, total_sus, wait, streams_json):
         self.base_url = base_url
         self.api_key = api_key
         self.total_sus = total_sus
         self.wait = wait
         self.streams_json = streams_json
+        self.config = configparser.ConfigParser()
+        self.config.read(config_path)
         return
 
     def request(self, partial_url, method, body):
@@ -30,7 +33,7 @@ class Sender:
 
     def send_sus(self):
         h = httplib2.Http()
-        h.add_credentials('Administrator', 'masterautonomic')
+        h.add_credentials(self.config['CouchBase']['User'], self.config['CouchBase']['Password'])
         for stream in self.streams_json:
             sent = False
             while not sent:
@@ -38,7 +41,7 @@ class Sender:
                 counter = 0
                 while counter != 5:
                     responseCB, contentCB  = h.request(
-                        'http://minerva-11:8091/pools/default/buckets/soupdates',
+                        self.config['CouchBase']['BaseAddress'] + 'pools/default/buckets/soupdates',
                         'GET'
                     )
                     contentCB = json.loads(contentCB.decode('utf-8'))
@@ -73,7 +76,7 @@ def main():
         stream_jsons.append(streams)
     for i in range(int(sys.argv[4])):
         for streams in stream_jsons:
-            sender = Sender(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
+            sender = Sender('../benchmark.ini', sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], streams)
             sender.send_sus()
             time.sleep(0)
     return

@@ -37,6 +37,7 @@ class Topology:
         self.streams = []
         self.dependencies = {}
         self.noperands = operands
+        self.auth = self.get_access_token()
 
         self.deploy = deploy
 
@@ -454,13 +455,13 @@ class Topology:
 
     def post_so(self, so):
         headers = {
-            'Authorization': self.config['API']['AuthToken'],
+            'Authorization': self.auth,
             'Content-Type': 'application/json; charset=UTF-8'
         }
-        response, content = self.request('', 'POST', so, headers)
+        response, content = self.request_api('', 'POST', so, headers)
         while int(response['status']) != 201:
             print(content + '\n')
-            response, content = self.request('', 'POST', so, headers)
+            response, content = self.request_api('', 'POST', so, headers)
         json_content = json.loads(content)
         return json_content['id'], json_content['api_token']
 
@@ -474,12 +475,12 @@ class Topology:
         su['lastUpdate'] = 1
         for i in range(len(json_so['streams'][stream]['channels'])):
             su['channels']['channel'+str(i)] = {'current-value': 0}
-        response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su), headers)
+        response, content = self.request_api(so_id+'/streams/'+stream, 'PUT', json.dumps(su), headers)
         while int(response['status']) != 202:
-            response, content = self.request(so_id+'/streams/'+stream, 'PUT', json.dumps(su), headers)
+            response, content = self.request_api(so_id+'/streams/'+stream, 'PUT', json.dumps(su), headers)
         return
 
-    def request(self, partial_url, method, body, headers):
+    def request_api(self, partial_url, method, body, headers):
 
         h = httplib2.Http()
         response, content = h.request(
@@ -488,6 +489,16 @@ class Topology:
             body,
             headers)
         return response, content.decode('utf-8')
+
+    def get_access_token(self):
+
+        h = httplib2.Http()
+        response, content = h.request(
+            self.config['IDM']['BaseAddress'] + 'auth/user/',
+            'POST',
+            '{"username":"' + self.config['IDM']['User'] + '","password":"' + self.config['IDM']['Password'] + '"}',
+            {'Content-Type': 'application/json;charset=UTF-8'})
+        return response, json.load(content.decode('utf-8'))['accessToken']
 
 
 def main():
