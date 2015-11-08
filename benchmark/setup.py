@@ -37,7 +37,6 @@ class Topology:
         self.streams = []
         self.dependencies = {}
         self.noperands = operands
-        self.auth = self.get_access_token()
 
         self.deploy = deploy
 
@@ -48,6 +47,7 @@ class Topology:
         self.det_operands_index = 0
 
         self.config.read(config_path)
+        response, self.auth = self.get_access_token()
 
         num_initsos = round(eval(self.config['TOPOLOGIES']['InitialSOs'] if isos == None else isos))
         if num_initsos < 0:
@@ -498,7 +498,7 @@ class Topology:
             'POST',
             '{"username":"' + self.config['IDM']['User'] + '","password":"' + self.config['IDM']['Password'] + '"}',
             {'Content-Type': 'application/json;charset=UTF-8'})
-        return response, json.load(content.decode('utf-8'))['accessToken']
+        return response, json.loads(content.decode('utf-8'))['accessToken']
 
 
 def main():

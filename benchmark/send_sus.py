@@ -33,7 +33,7 @@ class Sender:
 
     def send_sus(self):
         h = httplib2.Http()
-        h.add_credentials(self.config['CouchBase']['User'], self.config['CouchBase']['Password'])
+        h.add_credentials(self.config['COUCHBASE']['User'], self.config['CouchBase']['Password'])
         for stream in self.streams_json:
             sent = False
             while not sent:
@@ -41,7 +41,7 @@ class Sender:
                 counter = 0
                 while counter != 5:
                     responseCB, contentCB  = h.request(
-                        self.config['CouchBase']['BaseAddress'] + 'pools/default/buckets/soupdates',
+                        self.config['COUCHBASE']['BaseAddress'] + 'pools/default/buckets/soupdates',
                         'GET'
                     )
                     contentCB = json.loads(contentCB.decode('utf-8'))
