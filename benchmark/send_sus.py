@@ -52,6 +52,8 @@ class Sender:
                                                  su)
                 if int(response['status']) != 202:
                     continue
+
+                print("Update to "+stream[0]+":"+stream[1])
                 sent = True
         return
 
