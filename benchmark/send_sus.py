@@ -32,7 +32,7 @@ class Sender:
 
     def send_sus(self):
         h = httplib2.Http()
-        h.add_credentials(self.config['COUCHBASE']['User'], self.config['CouchBase']['Password'])
+        h.add_credentials(self.config['COUCHBASE']['User'], self.config['COUCHBASE']['Password'])
         for stream in self.streams_json:
             sent = False
             while not sent:
